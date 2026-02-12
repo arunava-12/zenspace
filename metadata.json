@@ -1,0 +1,8 @@
+{
+  "name": "Copy of ZenSpace",
+  "description": "A modern, minimal project management SaaS dashboard designed for team collaboration, task tracking, and AI-assisted productivity.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}

@@ -1,0 +1,34 @@
+{
+  "name": "copy-of-zenspace",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "db:seed": "tsx prisma/seed.ts",
+    "db:studio": "prisma studio"
+  },
+  "dependencies": {
+    "@google/genai": "^1.40.0",
+    "@prisma/client": "^6.17.0",
+    "bcrypt": "^6.0.0",
+    "framer-motion": "^11.13.1",
+    "gsap": "^3.12.5",
+    "lucide-react": "^0.471.0",
+    "ogl": "^1.0.11",
+    "prisma": "^6.17.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-router-dom": "^7.0.0"
+  },
+  "devDependencies": {
+    "@types/bcrypt": "^6.0.0",
+    "@types/node": "^22.14.0",
+    "@vitejs/plugin-react": "^5.0.0",
+    "tsx": "^4.21.0",
+    "typescript": "~5.8.2",
+    "vite": "^6.2.0"
+  }
+}
