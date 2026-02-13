@@ -7,7 +7,12 @@ interface TeamProps {
 }
 
 const Team: React.FC<TeamProps> = ({ store }) => {
-  const { users, activeWorkspace, addMember, joinWorkspace } = store;
+  const {
+  users = [],
+  activeWorkspace = { id: '', name: '' },
+  addMember,
+  joinWorkspace
+} = store || {};
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [showJoinModal, setShowJoinModal] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');

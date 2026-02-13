@@ -24,7 +24,7 @@ const Login: React.FC<LoginProps> = ({ store }) => {
 
     try {
       if (isLogin) {
-        await login(email);
+        await login(email, password);
       } else {
         await signup(name, email, password);
       }

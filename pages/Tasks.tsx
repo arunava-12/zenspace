@@ -8,7 +8,15 @@ interface TasksProps {
 }
 
 const Tasks: React.FC<TasksProps> = ({ store }) => {
-  const { tasks, projects, users, addTask, updateTask, deleteTask, currentUser } = store;
+  const {
+  tasks = [],
+  projects = [],
+  users = [],
+  addTask,
+  updateTask,
+  deleteTask,
+  currentUser = { id: '' }
+} = store || {};
   const [showModal, setShowModal] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [dragOverStatus, setDragOverStatus] = useState<string | null>(null);
@@ -17,7 +25,7 @@ const Tasks: React.FC<TasksProps> = ({ store }) => {
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    projectId: projects[0]?.id || '',
+    projectId: projects?.[0]?.id || '',
     priority: 'Medium' as Priority,
     type: 'Task' as TaskType,
     status: 'Todo' as TaskStatus,

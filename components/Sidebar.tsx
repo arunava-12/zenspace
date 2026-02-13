@@ -14,7 +14,15 @@ import {
 } from 'lucide-react';
 import { Workspace } from '../types.ts';
 
-const Sidebar: React.FC<any> = ({ isOpen, setIsOpen, activeWorkspace, workspaces, setActiveWorkspaceId, createWorkspace, openWorkspaceModal }) => {
+const Sidebar: React.FC<any> = ({
+  isOpen,
+  setIsOpen,
+  activeWorkspace = { id: '', name: '' },
+  workspaces = [],
+  setActiveWorkspaceId = (id: string) => {},
+  createWorkspace = () => {},
+  openWorkspaceModal = (type?: string) => {}
+}) => {
   const [showWsMenu, setShowWsMenu] = useState(false);
 
   const navItems = [

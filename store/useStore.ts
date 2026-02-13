@@ -1,422 +1,368 @@
+import { useState, useEffect, useCallback } from "react";
+import { User } from "../types";
 
-import { useState, useEffect, useCallback } from 'react';
-import { Project, Task, User, Workspace, FileAsset, Comment } from '../types.ts';
-import { 
-  authAPI, 
-  userAPI, 
-  workspaceAPI, 
-  projectAPI, 
-  taskAPI,
-  APIError 
-} from '../api/index.ts';
+class APIError extends Error {
+  constructor(
+    message: string,
+    public status?: number,
+  ) {
+    super(message);
+  }
+}
+
+const API_BASE = "http://localhost:4000/api";
 
 export function useStore() {
+  // Authentication is bootstrapped from the server. Start as `false` and set
+  // `bootstrapped` once the initial fetch completes so UI components that
+  // depend on `currentUser` won't crash during the async load.
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
-    return authAPI.isAuthenticated();
+    return !!localStorage.getItem("userId");
   });
-  
-  const [users, setUsers] = useState<User[]>([]);
+
+  const [bootstrapped, setBootstrapped] = useState<boolean>(false);
+
   const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
-
-  const [activeWorkspaceId, setActiveWorkspaceId] = useState<string>(() => {
-    return localStorage.getItem('zenspace_active_ws') || '';
-  });
-
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [tasks, setTasks] = useState<Task[]>([]);
-
-  const [files, setFiles] = useState<FileAsset[]>([]);
-
-  const [comments, setComments] = useState<Comment[]>([]);
-  
-  const [darkMode, setDarkMode] = useState(() => {
-    const saved = localStorage.getItem('zenspace_theme');
-    if (saved) return saved === 'dark';
-    return window.matchMedia('(prefers-color-scheme: dark)').matches;
-  });
-
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Global UI Modal States
+  const [darkMode, setDarkMode] = useState(() => {
+    const saved = localStorage.getItem("zenspace_theme");
+    if (saved) return saved === "dark";
+    return window.matchMedia("(prefers-color-scheme: dark)").matches;
+  });
+
+  const updateProfile = (name: string, email: string) => {
+    setCurrentUser((prev) => (prev ? { ...prev, name, email } : prev));
+  };
+
+  const updateAvatar = (avatar: string) => {
+    setCurrentUser((prev) => {
+      if (!prev) return prev;
+
+      const updated = { ...prev, avatar };
+      localStorage.setItem("zenspace_user", JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  // Workspaces
+  const [workspaces, setWorkspaces] = useState<Array<any>>(() => {
+    // basic default workspace for new installs
+    const defaultWs = {
+      id: "demo-workspace",
+      name: "Demo's Workspace",
+      ownerId: "",
+    };
+    return [defaultWs];
+  });
+
+  const [activeWorkspace, setActiveWorkspace] = useState<any>(() => {
+    const saved = localStorage.getItem("activeWorkspaceId");
+    const id = saved || "demo-workspace";
+
+    const ws = workspaces.find((w) => w.id === id);
+    return ws || { id: "demo-workspace", name: "Demo's Workspace" };
+  });
+
+  const setActiveWorkspaceId = (id: string) => {
+    const ws = workspaces.find((w) => w.id === id);
+    if (ws) setActiveWorkspace(ws);
+    localStorage.setItem("activeWorkspaceId", id);
+  };
+
+  const updateWorkspace = (id: string, name: string) => {
+    setWorkspaces((prev) =>
+      prev.map((ws) => (ws.id === id ? { ...ws, name } : ws)),
+    );
+    if (activeWorkspace?.id === id)
+      setActiveWorkspace((aw: any) => ({ ...aw, name }));
+  };
+
+  // Simple in-memory collections used across the UI
+  const [projects, setProjects] = useState<Array<any>>([]);
+  const [tasks, setTasks] = useState<Array<any>>([]);
+  const [users, setUsers] = useState<Array<User>>(() =>
+    currentUser ? [currentUser] : [],
+  );
+  // Keep users array in sync with logged-in user
+  useEffect(() => {
+    if (currentUser) {
+      setUsers((prev) => {
+        if (!currentUser) return prev;
+        return prev.some((u) => u.id === currentUser.id)
+          ? prev
+          : [currentUser, ...prev];
+      });
+    }
+  }, [currentUser]);
+  const [files, setFiles] = useState<Array<any>>([]);
+  const [comments, setComments] = useState<Array<any>>([]);
+
+  // Modals / UI state
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
-  const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
   const [isWorkspaceModalOpen, setIsWorkspaceModalOpen] = useState(false);
+  const [workspaceModalType, setWorkspaceModalType] = useState<
+    "create" | "join" | undefined
+  >(undefined);
   const [isChatbotOpen, setIsChatbotOpen] = useState(false);
-  const [workspaceModalType, setWorkspaceModalType] = useState<'create' | 'join'>('create');
+  const [editingTask, setEditingTask] = useState<any | null>(null);
 
-  // Initialize user data on app load
-  useEffect(() => {
-    const initializeUser = async () => {
-      if (authAPI.isAuthenticated()) {
-        try {
-          setIsLoading(true);
-          const user = await userAPI.getCurrentUser();
-          setCurrentUser(user);
-          
-          const userWorkspaces = await workspaceAPI.getUserWorkspaces();
-          setWorkspaces(userWorkspaces);
-          
-          if (userWorkspaces.length > 0) {
-            const wsId = localStorage.getItem('zenspace_active_ws') || userWorkspaces[0].id;
-            setActiveWorkspaceId(wsId);
-          }
+  const openWorkspaceModal = (type: "create" | "join" = "create") => {
+    setWorkspaceModalType(type);
+    setIsWorkspaceModalOpen(true);
+  };
+  const closeWorkspaceModal = () => setIsWorkspaceModalOpen(false);
 
-          setIsAuthenticated(true);
-        } catch (err) {
-          setError(err instanceof APIError ? err.message : 'Failed to initialize user');
-          setIsAuthenticated(false);
-          authAPI.logout();
-        } finally {
-          setIsLoading(false);
-        }
-      }
-    };
-    
-    initializeUser();
-  }, []);
+  const openTaskModal = (task?: any) => {
+    setEditingTask(task || null);
+    setIsTaskModalOpen(true);
+  };
+  const closeTaskModal = () => {
+    setEditingTask(null);
+    setIsTaskModalOpen(false);
+  };
 
-  // Fetch projects when workspace changes
-  useEffect(() => {
-    const fetchProjects = async () => {
-      if (activeWorkspaceId && isAuthenticated) {
-        try {
-          const projectList = await projectAPI.getProjects(activeWorkspaceId);
-          setProjects(projectList);
-        } catch (err) {
-          setError(err instanceof APIError ? err.message : 'Failed to fetch projects');
-        }
-      }
-    };
-    
-    fetchProjects();
-  }, [activeWorkspaceId, isAuthenticated]);
+  const openProjectModal = () => setIsProjectModalOpen(true);
+  const closeProjectModal = () => setIsProjectModalOpen(false);
+  const openChatbot = () => setIsChatbotOpen(true);
+  const closeChatbot = () => setIsChatbotOpen(false);
 
-  // Fetch tasks when projects change
-  useEffect(() => {
-    const fetchTasks = async () => {
-      if (isAuthenticated) {
-        try {
-          const taskList = await taskAPI.getTasks();
-          setTasks(taskList);
-        } catch (err) {
-          setError(err instanceof APIError ? err.message : 'Failed to fetch tasks');
-        }
-      }
-    };
-    
-    fetchTasks();
-  }, [isAuthenticated]);
+  // CRUD helpers
+  const addTask = (t: any) => setTasks((prev) => [t, ...prev]);
+  const updateTask = (t: any) =>
+    setTasks((prev) => prev.map((x) => (x.id === t.id ? t : x)));
+  const deleteTask = (id: string) =>
+    setTasks((prev) => prev.filter((t) => t.id !== id));
 
-  // Persist workspace selection
-  useEffect(() => {
-    if (activeWorkspaceId) {
-      localStorage.setItem('zenspace_active_ws', activeWorkspaceId);
-    }
-  }, [activeWorkspaceId]);
+  const addProject = (p: any) => setProjects((prev) => [p, ...prev]);
+  const deleteProject = (id: string) => {
+    setProjects((prev) => prev.filter((p) => p.id !== id));
+    setTasks((prev) => prev.filter((t) => t.projectId !== id));
+  };
+  const addProjectMember = (projectId: string, userId: string) => {
+    setProjects((prev) =>
+      prev.map((p) =>
+        p.id === projectId
+          ? {
+              ...p,
+              memberIds: Array.from(new Set([...(p.memberIds || []), userId])),
+            }
+          : p,
+      ),
+    );
+  };
 
-  // Persist theme
+  const addFile = (f: any) => setFiles((prev) => [f, ...prev]);
+  const deleteFile = (id: string) =>
+    setFiles((prev) => prev.filter((f) => f.id !== id));
+
+  const addComment = (c: any) => setComments((prev) => [c, ...prev]);
+
+  const createWorkspace = (name: string) => {
+    const id = `w-${Math.random().toString(36).slice(2, 9)}`;
+    const ws = { id, name, ownerId: currentUser?.id || "" };
+    setWorkspaces((prev) => [ws, ...prev]);
+    setActiveWorkspace(ws);
+    localStorage.setItem("activeWorkspaceId", id);
+    return ws;
+  };
+
+  const joinWorkspace = (joinCode: string) => {
+    // simple fake join that creates a workspace with the provided code
+    const ws = createWorkspace(joinCode);
+    return ws;
+  };
+
+  // ---------------- THEME ----------------
   useEffect(() => {
     if (darkMode) {
-      document.documentElement.classList.add('dark');
-      localStorage.setItem('zenspace_theme', 'dark');
+      document.documentElement.classList.add("dark");
+      localStorage.setItem("zenspace_theme", "dark");
     } else {
-      document.documentElement.classList.remove('dark');
-      localStorage.setItem('zenspace_theme', 'light');
+      document.documentElement.classList.remove("dark");
+      localStorage.setItem("zenspace_theme", "light");
     }
   }, [darkMode]);
 
-  const activeWorkspace = workspaces.find(w => w.id === activeWorkspaceId) || workspaces[0];
+  // ---------------- FETCH CURRENT USER ----------------
+  useEffect(() => {
+    // 1️⃣ FIRST: Try localStorage
+    const savedUser = localStorage.getItem("zenspace_user");
+    if (savedUser) {
+      setCurrentUser(JSON.parse(savedUser));
+    }
 
-  const login = useCallback(async (email: string) => {
+    const fetchUser = async () => {
+      const userId = localStorage.getItem("userId");
+      if (!userId) {
+        setBootstrapped(true);
+        return;
+      }
+
+      try {
+        const res = await fetch(`${API_BASE}/auth/me/${userId}`);
+        if (!res.ok) {
+          localStorage.removeItem("userId");
+          setBootstrapped(true);
+          return;
+        }
+
+        const data = await res.json();
+
+        // 2️⃣ THEN: Override with server data
+        setCurrentUser(data.user);
+
+        // Optional but recommended → keep localStorage updated
+        localStorage.setItem("zenspace_user", JSON.stringify(data.user));
+
+        setIsAuthenticated(true);
+      } catch (err) {
+        localStorage.removeItem("userId");
+        setIsAuthenticated(false);
+      } finally {
+        setBootstrapped(true);
+      }
+    };
+
+    fetchUser();
+  }, []);
+
+  // ---------------- LOGIN ----------------
+  const login = useCallback(async (email: string, password: string) => {
     try {
       setIsLoading(true);
       setError(null);
-      const { user } = await authAPI.login(email);
-      setCurrentUser(user);
-      
-      const userWorkspaces = await workspaceAPI.getUserWorkspaces();
-      setWorkspaces(userWorkspaces);
-      
-      if (userWorkspaces.length > 0) {
-        setActiveWorkspaceId(userWorkspaces[0].id);
+
+      const res = await fetch(`${API_BASE}/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new APIError(err.error || "Request failed");
       }
-      
+      const data = await res.json();
+
+      localStorage.setItem("userId", data.user.id);
+      setCurrentUser(data.user);
       setIsAuthenticated(true);
     } catch (err) {
-      const errorMessage = err instanceof APIError ? err.message : 'Login failed';
-      setError(errorMessage);
+      setError(err instanceof Error ? err.message : "Login failed");
       throw err;
     } finally {
       setIsLoading(false);
     }
   }, []);
 
-  const signup = useCallback(async (name: string, email: string, password: string = '') => {
-    try {
-      setIsLoading(true);
-      setError(null);
-      const { user } = await authAPI.signup(name, email, password);
-      setCurrentUser(user);
-      
-      const userWorkspaces = await workspaceAPI.getUserWorkspaces();
-      setWorkspaces(userWorkspaces);
-      
-      if (userWorkspaces.length > 0) {
-        setActiveWorkspaceId(userWorkspaces[0].id);
+  // ---------------- SIGNUP ----------------
+  const signup = useCallback(
+    async (name: string, email: string, password: string) => {
+      try {
+        setIsLoading(true);
+        setError(null);
+
+        const res = await fetch(`${API_BASE}/auth/signup`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name, email, password }),
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new APIError(data.error);
+
+        localStorage.setItem("userId", data.user.id);
+        setCurrentUser(data.user);
+        setIsAuthenticated(true);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Signup failed");
+        throw err;
+      } finally {
+        setIsLoading(false);
       }
-      
-      setIsAuthenticated(true);
-    } catch (err) {
-      const errorMessage = err instanceof APIError ? err.message : 'Signup failed';
-      setError(errorMessage);
-      throw err;
-    } finally {
-      setIsLoading(false);
-    }
+    },
+    [],
+  );
+
+  // ---------------- LOGOUT ----------------
+  const logout = useCallback(() => {
+    localStorage.removeItem("userId");
+    setCurrentUser(null);
+    setUsers([]); // <-- ADD THIS LINE
+    setIsAuthenticated(false);
   }, []);
-
-  const logout = useCallback(async () => {
-    try {
-      await authAPI.logout();
-      setIsAuthenticated(false);
-      setCurrentUser(null);
-      setWorkspaces([]);
-      setProjects([]);
-      setTasks([]);
-      setActiveWorkspaceId('');
-    } catch (err) {
-      const errorMessage = err instanceof APIError ? err.message : 'Logout failed';
-      setError(errorMessage);
-    }
-  }, []);
-
-  const addProject = useCallback(async (project: Omit<Project, 'id'>) => {
-    try {
-      const newProject = await projectAPI.createProject(project);
-      setProjects(prev => [...prev, newProject]);
-      return newProject;
-    } catch (err) {
-      const errorMessage = err instanceof APIError ? err.message : 'Failed to create project';
-      setError(errorMessage);
-      throw err;
-    }
-  }, []);
-
-  const updateProject = useCallback(async (projectId: string, updates: Partial<Project>) => {
-    try {
-      const updated = await projectAPI.updateProject(projectId, updates);
-      setProjects(prev => prev.map(p => p.id === projectId ? updated : p));
-      return updated;
-    } catch (err) {
-      const errorMessage = err instanceof APIError ? err.message : 'Failed to update project';
-      setError(errorMessage);
-      throw err;
-    }
-  }, []);
-
-  const deleteProject = useCallback(async (id: string) => {
-    try {
-      // Add deleteProject to API if needed
-      setProjects(prev => prev.filter(p => p.id !== id));
-      setTasks(prev => prev.filter(t => t.projectId !== id));
-    } catch (err) {
-      const errorMessage = err instanceof APIError ? err.message : 'Failed to delete project';
-      setError(errorMessage);
-      throw err;
-    }
-  }, []);
-
-  const addProjectMember = useCallback((projectId: string, userId: string) => {
-    setProjects(prev => prev.map(p => {
-      if (p.id === projectId && !p.memberIds.includes(userId)) {
-        return { ...p, memberIds: [...p.memberIds, userId] };
-      }
-      return p;
-    }));
-  }, []);
-
-  const removeProjectMember = useCallback((projectId: string, userId: string) => {
-    setProjects(prev => prev.map(p => {
-      if (p.id === projectId) {
-        return { ...p, memberIds: p.memberIds.filter(id => id !== userId) };
-      }
-      return p;
-    }));
-  }, []);
-
-  const addTask = useCallback(async (task: Omit<Task, 'id'>) => {
-    try {
-      const newTask = await taskAPI.createTask(task);
-      setTasks(prev => [...prev, newTask]);
-      return newTask;
-    } catch (err) {
-      const errorMessage = err instanceof APIError ? err.message : 'Failed to create task';
-      setError(errorMessage);
-      throw err;
-    }
-  }, []);
-
-  const updateTask = useCallback(async (taskId: string, updates: Partial<Task>) => {
-    try {
-      const updated = await taskAPI.updateTask(taskId, updates);
-      setTasks(prev => prev.map(t => t.id === taskId ? updated : t));
-      return updated;
-    } catch (err) {
-      const errorMessage = err instanceof APIError ? err.message : 'Failed to update task';
-      setError(errorMessage);
-      throw err;
-    }
-  }, []);
-
-  const deleteTask = useCallback(async (id: string) => {
-    try {
-      await taskAPI.deleteTask(id);
-      setTasks(prev => prev.filter(t => t.id !== id));
-    } catch (err) {
-      const errorMessage = err instanceof APIError ? err.message : 'Failed to delete task';
-      setError(errorMessage);
-      throw err;
-    }
-  }, []);
-
-  const addFile = useCallback((file: FileAsset) => {
-    setFiles(prev => [...prev, file]);
-  }, []);
-
-  const deleteFile = useCallback((id: string) => {
-    setFiles(prev => prev.filter(f => f.id !== id));
-  }, []);
-
-  const addComment = useCallback((comment: Comment) => {
-    setComments(prev => [...prev, comment]);
-  }, []);
-
-  const updateProfile = useCallback(async (name: string, email: string) => {
-    if (!currentUser) return;
-    const updatedUser = { ...currentUser, name, email };
-    setCurrentUser(updatedUser);
-  }, [currentUser]);
-
-  const updateAvatar = useCallback((avatar: string) => {
-    const updatedUser = { ...currentUser, avatar };
-    setCurrentUser(updatedUser);
-    setUsers(prev => prev.map(u => u.id === currentUser.id ? updatedUser : u));
-  }, [currentUser]);
-
-  const createWorkspace = useCallback(async (name: string) => {
-    try {
-      const newWs = await workspaceAPI.createWorkspace(name);
-      setWorkspaces(prev => [...prev, newWs]);
-      setActiveWorkspaceId(newWs.id);
-      return newWs;
-    } catch (err) {
-      const errorMessage = err instanceof APIError ? err.message : 'Failed to create workspace';
-      setError(errorMessage);
-      throw err;
-    }
-  }, []);
-
-  const updateWorkspace = useCallback((id: string, name: string) => {
-    setWorkspaces(prev => prev.map(w => w.id === id ? { ...w, name } : w));
-  }, []);
-
-  const joinWorkspace = useCallback((code: string) => {
-    const found = workspaces.find(w => w.id === code || w.name.toLowerCase() === code.toLowerCase());
-    if (found) {
-      setActiveWorkspaceId(found.id);
-      return true;
-    }
-    return false;
-  }, [workspaces]);
-
-  const addMember = useCallback(async (email: string) => {
-    try {
-      const users = await userAPI.getUsers();
-      const exists = users.find(u => u.email === email);
-      if (exists) {
-        addProjectMember(activeWorkspaceId, exists.id);
-      }
-    } catch (err) {
-      const errorMessage = err instanceof APIError ? err.message : 'Failed to add member';
-      setError(errorMessage);
-    }
-  }, [activeWorkspaceId, addProjectMember]);
-
-  const openTaskModal = useCallback((task?: Task) => {
-    setEditingTask(task || null);
-    setIsTaskModalOpen(true);
-  }, []);
-  
-  const closeTaskModal = useCallback(() => {
-    setIsTaskModalOpen(false);
-    setEditingTask(null);
-  }, []);
-
-  const openProjectModal = useCallback(() => setIsProjectModalOpen(true), []);
-  const closeProjectModal = useCallback(() => setIsProjectModalOpen(false), []);
-
-  const openWorkspaceModal = useCallback((type: 'create' | 'join' = 'create') => {
-    setWorkspaceModalType(type);
-    setIsWorkspaceModalOpen(true);
-  }, []);
-  const closeWorkspaceModal = useCallback(() => setIsWorkspaceModalOpen(false), []);
-
-  const openChatbot = useCallback(() => setIsChatbotOpen(true), []);
-  const closeChatbot = useCallback(() => setIsChatbotOpen(false), []);
 
   return {
+    // -------- AUTH --------
     isAuthenticated,
+    bootstrapped,
     login,
     signup,
     logout,
     currentUser,
-    workspaces,
-    activeWorkspaceId,
-    setActiveWorkspaceId,
-    activeWorkspace,
-    projects,
-    tasks,
-    files,
-    comments,
-    users,
+
+    // -------- THEME --------
     darkMode,
     setDarkMode,
-    addProject,
-    updateProject,
-    deleteProject,
-    addProjectMember,
-    removeProjectMember,
-    addTask,
-    updateTask,
-    deleteTask,
-    addFile,
-    deleteFile,
-    addComment,
+
+    // -------- PROFILE --------
     updateProfile,
     updateAvatar,
+
+    // -------- WORKSPACES --------
+    workspaces,
+    activeWorkspace,
+    setActiveWorkspaceId,
     updateWorkspace,
     createWorkspace,
     joinWorkspace,
-    addMember,
+
+    // -------- PROJECTS --------
+    projects,
+    addProject,
+    deleteProject,
+    addProjectMember,
+
+    // -------- TASKS --------
+    tasks,
+    addTask,
+    updateTask,
+    deleteTask,
+
+    // -------- USERS --------
+    users,
+
+    // -------- FILES / COMMENTS --------
+    files,
+    addFile,
+    deleteFile,
+    comments,
+    addComment,
+
+    // -------- MODALS --------
     isTaskModalOpen,
-    editingTask,
-    isProjectModalOpen,
     openTaskModal,
     closeTaskModal,
+
+    isProjectModalOpen,
     openProjectModal,
     closeProjectModal,
+
     isWorkspaceModalOpen,
-    workspaceModalType,
     openWorkspaceModal,
     closeWorkspaceModal,
+    workspaceModalType,
+
     isChatbotOpen,
     openChatbot,
     closeChatbot,
+
+    // -------- LOADING / ERROR --------
     isLoading,
     error,
-    setError
+    setError,
   };
 }

@@ -14,7 +14,18 @@ import Landing from './pages/Landing.tsx';
 
 const App: React.FC = () => {
   const store = useStore();
-  const { isAuthenticated } = store;
+  const { isAuthenticated, bootstrapped } = store;
+
+  // While we are bootstrapping the auth (fetching current user from API),
+  // render a minimal loading placeholder to avoid rendering protected
+  // routes/components that expect `currentUser` synchronously.
+  if (!bootstrapped) {
+    return (
+      <div className="h-screen w-screen flex items-center justify-center bg-zinc-50 dark:bg-zinc-950">
+        <div className="text-zinc-500">Loading…</div>
+      </div>
+    );
+  }
 
   return (
     <HashRouter>

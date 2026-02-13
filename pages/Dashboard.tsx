@@ -18,7 +18,15 @@ interface DashboardProps {
 }
 
 const Dashboard: React.FC<DashboardProps> = ({ store }) => {
-  const { projects, tasks, currentUser, openProjectModal, openChatbot } = store;
+  const {
+  projects = [],
+  tasks = [],
+  currentUser = { id: '', name: '' },
+  openProjectModal,
+  openChatbot,
+  users = []
+} = store || {};
+
   const navigate = useNavigate();
 
   const totalProjects = projects.length;
@@ -35,7 +43,7 @@ const Dashboard: React.FC<DashboardProps> = ({ store }) => {
              <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-lg shadow-blue-500/20">
                 <Zap size={20} fill="currentColor" />
              </div>
-             <h1 className="text-4xl font-black tracking-tighter">Morning, {currentUser.name.split(' ')[0]}</h1>
+             <h1 className="text-4xl font-black tracking-tighter">Morning, {(currentUser.name || '').split(' ')[0]}</h1>
           </div>
           <p className="text-zinc-500 font-medium pl-1">Everything looks smooth in <span className="text-zinc-900 dark:text-white font-bold">Global Ops</span> today.</p>
         </div>
@@ -203,7 +211,7 @@ const Dashboard: React.FC<DashboardProps> = ({ store }) => {
           <div className="glass-card rounded-[2rem] border border-zinc-200 dark:border-zinc-800 shadow-sm p-8 space-y-8">
             <h2 className="font-bold text-xl tracking-tight">The Squad</h2>
             <div className="space-y-6">
-              {store.users.map((user: any) => (
+              {users.map((user: any) => (
                 <div key={user.id} className="flex items-center justify-between group">
                   <div className="flex items-center gap-4">
                     <div className="relative">
