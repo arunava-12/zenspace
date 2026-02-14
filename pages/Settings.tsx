@@ -46,7 +46,7 @@ const Settings: React.FC<SettingsProps> = ({ store }) => {
   const saveAvatarToServer = async (avatar: string) => {
     if (!currentUser?.id) return;
 
-    await fetch(`http://localhost:4000/api/user/avatar/${currentUser.id}`, {
+    await fetch(`https://zenspace-production-fc6e.up.railway.app/api/user/avatar/${currentUser.id}`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
