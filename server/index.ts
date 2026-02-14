@@ -7,8 +7,13 @@ import workspaceRoutes from "./routes/workspace";
 
 const app = express();
 
-app.use(cors());
+app.use(cors({
+  origin: "*",
+}));
+
 app.use(express.json());
+
+app.use("/api/auth", authRoutes);
 app.use("/api/user", userRoutes);
 app.use("/api/projects", projectRoutes);
 app.use("/api/workspaces", workspaceRoutes);
@@ -17,9 +22,8 @@ app.get("/", (req, res) => {
   res.send("ZenSpace API Running");
 });
 
-app.use("/api/auth", authRoutes);
+const PORT = process.env.PORT || 4000;
 
-app.listen(4000, () => {
-  console.log("Server running on http://localhost:4000");
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
 });
-
