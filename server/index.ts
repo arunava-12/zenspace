@@ -19,11 +19,11 @@ app.use("/api/projects", projectRoutes);
 app.use("/api/workspaces", workspaceRoutes);
 
 app.get("/", (req, res) => {
-  res.send("ZenSpace API Running");
+  res.status(200).send("ZenSpace API Running");
 });
 
-const PORT = process.env.PORT || 4000;
+const PORT = Number(process.env.PORT) || 4000;
 
-app.listen(PORT, () => {
+app.listen(PORT, "0.0.0.0", () => {
   console.log(`Server running on port ${PORT}`);
 });
