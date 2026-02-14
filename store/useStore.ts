@@ -58,17 +58,21 @@ export function useStore() {
   });
 
   const [activeWorkspace, setActiveWorkspace] = useState<any>(() => {
-    const saved = localStorage.getItem("activeWorkspaceId");
-    const id = saved || "demo-workspace";
+    const saved = localStorage.getItem("activeWorkspace");
 
-    const ws = workspaces.find((w) => w.id === id);
-    return ws || { id: "demo-workspace", name: "Demo's Workspace" };
+    if (saved) {
+      return JSON.parse(saved);
+    }
+
+    return { id: "demo-workspace", name: "Demo's Workspace" };
   });
 
   const setActiveWorkspaceId = (id: string) => {
     const ws = workspaces.find((w) => w.id === id);
-    if (ws) setActiveWorkspace(ws);
-    localStorage.setItem("activeWorkspaceId", id);
+    if (ws) {
+      setActiveWorkspace(ws);
+      localStorage.setItem("activeWorkspace", JSON.stringify(ws));
+    }
   };
 
   const updateWorkspace = (id: string, name: string) => {
@@ -136,7 +140,24 @@ export function useStore() {
   const deleteTask = (id: string) =>
     setTasks((prev) => prev.filter((t) => t.id !== id));
 
-  const addProject = (p: any) => setProjects((prev) => [p, ...prev]);
+  const addProject = async (project: any) => {
+    try {
+      const res = await fetch(`${API_BASE}/projects`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...project,
+          workspaceId: activeWorkspace.id, // IMPORTANT
+        }),
+      });
+
+      const data = await res.json();
+      setProjects((prev) => [data, ...prev]);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   const deleteProject = (id: string) => {
     setProjects((prev) => prev.filter((p) => p.id !== id));
     setTasks((prev) => prev.filter((t) => t.projectId !== id));
@@ -160,13 +181,27 @@ export function useStore() {
 
   const addComment = (c: any) => setComments((prev) => [c, ...prev]);
 
-  const createWorkspace = (name: string) => {
-    const id = `w-${Math.random().toString(36).slice(2, 9)}`;
-    const ws = { id, name, ownerId: currentUser?.id || "" };
-    setWorkspaces((prev) => [ws, ...prev]);
-    setActiveWorkspace(ws);
-    localStorage.setItem("activeWorkspaceId", id);
-    return ws;
+  const createWorkspace = async (name: string) => {
+    try {
+      const res = await fetch("http://localhost:4000/api/workspaces", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name,
+          ownerId: currentUser.id,
+        }),
+      });
+
+      const data = await res.json();
+
+      setWorkspaces((prev) => [data, ...prev]);
+      setActiveWorkspace(data);
+      localStorage.setItem("activeWorkspace", JSON.stringify(data));
+
+      return data;
+    } catch (err) {
+      console.error("Workspace create failed", err);
+    }
   };
 
   const joinWorkspace = (joinCode: string) => {
@@ -228,6 +263,65 @@ export function useStore() {
 
     fetchUser();
   }, []);
+
+  // ---------------- FETCH PROJECTS ----------------
+  useEffect(() => {
+    const fetchProjects = async () => {
+      if (!activeWorkspace?.id || !currentUser?.id) return;
+
+      const res = await fetch(
+        `${API_BASE}/projects?userId=${currentUser.id}&workspaceId=${activeWorkspace.id}`,
+      );
+
+      const data = await res.json();
+
+      if (Array.isArray(data)) {
+        setProjects(data);
+      } else {
+        setProjects([]); // safety
+      }
+    };
+
+    fetchProjects();
+  }, [activeWorkspace, currentUser]);
+
+  // ---------------- FETCH WORKSPACES ----------------
+  useEffect(() => {
+    const fetchWorkspaces = async () => {
+      if (!currentUser?.id) return;
+
+      try {
+        const res = await fetch(
+          `${API_BASE}/workspaces?userId=${currentUser.id}`,
+        );
+
+        const data = await res.json();
+
+        if (Array.isArray(data)) {
+          setWorkspaces(data);
+        } else {
+          setWorkspaces([]);
+        }
+      } catch (err) {
+        console.error("Fetch workspaces failed");
+      }
+    };
+
+    fetchWorkspaces();
+  }, [currentUser]);
+
+  const deleteWorkspace = async (id: string) => {
+    await fetch(`${API_BASE}/workspaces/${id}`, {
+      method: "DELETE",
+    });
+
+    setActiveWorkspace((prev) => {
+      const remaining = workspaces.filter((w) => w.id !== id);
+      return remaining[0] || null;
+    });
+
+    setWorkspaces((prev) => prev.filter((w) => w.id !== id));
+  };
 
   // ---------------- LOGIN ----------------
   const login = useCallback(async (email: string, password: string) => {
@@ -319,6 +413,7 @@ export function useStore() {
     updateWorkspace,
     createWorkspace,
     joinWorkspace,
+    deleteWorkspace,
 
     // -------- PROJECTS --------
     projects,

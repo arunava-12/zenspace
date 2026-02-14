@@ -1,38 +1,65 @@
-import React from 'react';
-import { X, CheckCircle2, AlertCircle, PlusCircle, MessageCircle, Clock } from 'lucide-react';
+import React, { useMemo } from "react";
+import { X, CheckCircle2, MessageCircle, PlusCircle, Clock } from "lucide-react";
 
 interface ActivitySidebarProps {
   isOpen: boolean;
   setIsOpen: (open: boolean) => void;
   tasks?: any[];
   users?: any[];
+  projects?: any[];
 }
 
 const ActivitySidebar: React.FC<ActivitySidebarProps> = ({
   isOpen,
   setIsOpen,
   tasks = [],
-  users = []
+  users = [],
+  projects = []
 }) => {
 
-  // Safe mock data
-  const activities = [
-    { id: 1, type: 'complete', user: users?.[1], target: tasks?.[0]?.title || 'Task', time: '2 mins ago' },
-    { id: 2, type: 'comment', user: users?.[2], target: tasks?.[1]?.title || 'Task', time: '1 hour ago' },
-    { id: 3, type: 'create', user: users?.[0], target: 'New Mobile App Project', time: '3 hours ago' },
-    { id: 4, type: 'priority', user: users?.[1], target: tasks?.[2]?.title || 'Task', time: 'Yesterday' },
-    { id: 5, type: 'complete', user: users?.[0], target: 'Draft PR for Sidebar', time: '2 days ago' },
-  ];
+  // ---------- BUILD REAL ACTIVITY ----------
+  const activities = useMemo(() => {
+    const acts: any[] = [];
+
+    // Tasks Activity
+    tasks.forEach((task) => {
+      const user = users.find((u: any) => u.id === task.assigneeId);
+
+      acts.push({
+        id: `task-${task.id}`,
+        type: task.status === "Done" ? "complete" : "update",
+        user,
+        target: task.title,
+        time: task.updatedAt || task.createdAt || "Recently"
+      });
+    });
+
+    // Projects Activity
+    projects.forEach((project) => {
+      const lead = users.find((u: any) => u.id === project.leadId);
+
+      acts.push({
+        id: `project-${project.id}`,
+        type: "create",
+        user: lead,
+        target: project.name,
+        time: project.createdAt || "Recently"
+      });
+    });
+
+    // Sort latest first
+    return acts.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
+  }, [tasks, users, projects]);
 
   return (
     <aside
       className={`fixed md:relative right-0 top-0 h-full transition-all duration-300 z-30 flex flex-col glass-card ${
-        isOpen ? 'w-80 translate-x-0' : 'w-0 translate-x-full md:w-0'
+        isOpen ? "w-80 translate-x-0" : "w-0 translate-x-full md:w-0"
       } overflow-hidden`}
     >
       <div className="w-80 flex flex-col h-full">
 
-        {/* Header */}
+        {/* HEADER */}
         <div className="p-6 border-b flex items-center justify-between">
           <h2 className="font-bold text-lg flex items-center gap-2">
             <Clock size={18} className="text-blue-500" />
@@ -43,30 +70,56 @@ const ActivitySidebar: React.FC<ActivitySidebarProps> = ({
           </button>
         </div>
 
-        {/* Content */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-8">
+        {/* CONTENT */}
+        <div className="flex-1 overflow-y-auto p-6 space-y-6">
+
+          {activities.length === 0 && (
+            <p className="text-zinc-500 text-sm">No activity yet.</p>
+          )}
 
           {activities.map((activity) => (
             <div key={activity.id} className="space-y-1">
 
-              <p className="text-xs text-zinc-500">{activity.time}</p>
-
               <div className="flex items-center gap-2">
                 <img
-                  src={activity.user?.avatar || 'https://ui-avatars.com/api/?name=User'}
-                  className="w-5 h-5 rounded-full"
+                  src={
+                    activity.user?.avatar ||
+                    "https://ui-avatars.com/api/?name=User"
+                  }
+                  className="w-6 h-6 rounded-full"
                 />
-                <p className="text-sm font-bold truncate">
-                  {activity.user?.name?.split(' ')[0] || 'User'}
+                <p className="text-sm font-bold">
+                  {activity.user?.name || "User"}
                 </p>
               </div>
 
               <p className="text-xs text-zinc-600">
-                {activity.type === 'complete' ? 'completed ' :
-                 activity.type === 'comment' ? 'commented on ' :
-                 activity.type === 'create' ? 'created ' :
-                 'changed priority of '}
-                <span className="font-semibold">"{activity.target}"</span>
+                {activity.type === "complete" && (
+                  <span className="flex items-center gap-1">
+                    <CheckCircle2 size={12} className="text-emerald-500" />
+                    completed
+                  </span>
+                )}
+                {activity.type === "create" && (
+                  <span className="flex items-center gap-1">
+                    <PlusCircle size={12} className="text-blue-500" />
+                    created
+                  </span>
+                )}
+                {activity.type === "update" && (
+                  <span className="flex items-center gap-1">
+                    <MessageCircle size={12} className="text-amber-500" />
+                    updated
+                  </span>
+                )}
+
+                <span className="ml-1 font-semibold">
+                  "{activity.target}"
+                </span>
+              </p>
+
+              <p className="text-[10px] text-zinc-400">
+                {new Date(activity.time).toLocaleString()}
               </p>
 
             </div>

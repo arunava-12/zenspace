@@ -79,7 +79,7 @@ const Projects: React.FC<ProjectsProps> = ({ store }) => {
 
       {/* Project Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-        {filteredProjects.map((project: any) => {
+        {filteredProjects.map((project, index) =>  {
           const lead = users.find((u: any) => u.id === project.leadId);
           const memberIds = project.memberIds || [];
           const membersToShow = memberIds.slice(0, MAX_VISIBLE_MEMBERS);
@@ -87,7 +87,7 @@ const Projects: React.FC<ProjectsProps> = ({ store }) => {
 
           return (
             <div
-              key={project.id}
+              key={project.id || index}
               className="glass-card group flex flex-col rounded-2xl overflow-hidden hover:shadow-2xl hover:shadow-blue-500/5 transition-all duration-500 hover:-translate-y-1"
             >
               <div className="p-6 flex-1 space-y-4">
@@ -101,7 +101,7 @@ const Projects: React.FC<ProjectsProps> = ({ store }) => {
                           : "bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20"
                     }`}
                   >
-                    {project.name.charAt(0)}
+                     {(project.name || "P").charAt(0)}
                   </div>
                   <button className="p-1 hover:bg-white/20 dark:hover:bg-white/10 rounded-lg text-zinc-400 transition-colors">
                     <MoreVertical size={20} />

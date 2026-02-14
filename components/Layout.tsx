@@ -40,6 +40,7 @@ const Layout: React.FC<LayoutProps> = ({ children, store }) => {
         setActiveWorkspaceId={store.setActiveWorkspaceId}
         createWorkspace={store.createWorkspace}
         openWorkspaceModal={store.openWorkspaceModal}
+        deleteWorkspace={store.deleteWorkspace}
       />
 
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative z-10">
@@ -66,6 +67,7 @@ const Layout: React.FC<LayoutProps> = ({ children, store }) => {
             setIsOpen={setActivityOpen}
             tasks={store.tasks}
             users={store.users}
+            projects={store.projects}
           />
         </div>
       </div>

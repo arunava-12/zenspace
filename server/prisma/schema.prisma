@@ -66,8 +66,8 @@ model Project {
   id          String         @id @default(cuid())
   name        String
   description String?
-  status      ProjectStatus  @default(ACTIVE)
-  priority    Priority       @default(MEDIUM)
+  status      ProjectStatus  @default(Active)
+  priority    Priority       @default(Medium)
   progress    Int            @default(0) // 0-100
   startDate   DateTime
   endDate     DateTime
@@ -111,7 +111,7 @@ model Task {
   description String?
   status      TaskStatus  @default(TODO)
   type        TaskType    @default(TASK)
-  priority    Priority    @default(MEDIUM)
+  priority    Priority    @default(Medium)
   dueDate     DateTime?
   
   projectId   String
@@ -182,11 +182,11 @@ enum UserRole {
 }
 
 enum ProjectStatus {
-  ACTIVE
-  PLANNING
-  COMPLETED
-  ON_HOLD
-  CANCELLED
+  Active
+  Planning
+  Completed
+  OnHold
+  Cancelled
 }
 
 enum TaskStatus {
@@ -203,7 +203,8 @@ enum TaskType {
 }
 
 enum Priority {
-  LOW
-  MEDIUM
-  HIGH
+  Low
+  Medium
+  High
 }
+
