@@ -168,9 +168,13 @@ export function useStore() {
         throw new Error("Server delete failed");
       }
 
-      // update UI only after server success
+      // Remove project
       setProjects((prev) => prev.filter((p) => p.id !== id));
+
+      // Remove all related data
       setTasks((prev) => prev.filter((t) => t.projectId !== id));
+      setFiles((prev) => prev.filter((f) => f.projectId !== id));
+      setComments((prev) => prev.filter((c) => c.projectId !== id));
     } catch (err) {
       console.error("Delete project failed", err);
       alert("Failed to delete project from server");
