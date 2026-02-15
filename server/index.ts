@@ -21,6 +21,13 @@ const app = express();
 app.use(cors({ origin: "*" }));
 app.use(express.json());
 
+// 🔍 LOG ALL REQUESTS
+app.use((req, _res, next) => {
+  console.log(`${req.method} ${req.url}`);
+  next();
+});
+
+
 // Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/user", userRoutes);
