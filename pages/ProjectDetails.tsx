@@ -68,7 +68,8 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ store }) => {
   const project = projects.find((p: any) => p.id === id);
 
   if (!project) {
-    return <div className="p-10 text-center">Project not found</div>;
+    navigate("/projects");
+    return null;
   }
   const projectTasks = tasks.filter((t: any) => t.projectId === id);
   const projectFiles = files.filter((f: any) => f.projectId === id);
