@@ -10,7 +10,7 @@ class APIError extends Error {
   }
 }
 
-const API_BASE = "https://zenspace-production-fc6e.up.railway.app/api";
+const API_BASE = "https://zenspace-backend-hsfl.onrender.com/api";
 
 export function useStore() {
   // Authentication is bootstrapped from the server. Start as `false` and set
@@ -183,7 +183,7 @@ export function useStore() {
 
   const createWorkspace = async (name: string) => {
     try {
-      const res = await fetch("https://zenspace-production-fc6e.up.railway.app/api/workspaces", {
+      const res = await fetch("https://zenspace-backend-hsfl.onrender.com/api/workspaces", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
