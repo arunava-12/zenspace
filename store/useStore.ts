@@ -140,6 +140,27 @@ export function useStore() {
   const deleteTask = (id: string) =>
     setTasks((prev) => prev.filter((t) => t.id !== id));
 
+  const fetchProjects = async () => {
+    if (!activeWorkspace?.id || !currentUser?.id) return;
+
+    try {
+      const res = await fetch(
+        `${API_BASE}/projects?userId=${currentUser.id}&workspaceId=${activeWorkspace.id}`,
+      );
+
+      if (!res.ok) {
+        setProjects([]);
+        return;
+      }
+
+      const data = await res.json();
+      setProjects(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error("Fetch projects failed");
+      setProjects([]);
+    }
+  };
+
   const addProject = async (project: any) => {
     try {
       const res = await fetch(`${API_BASE}/projects`, {
@@ -147,12 +168,13 @@ export function useStore() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...project,
-          workspaceId: activeWorkspace.id, // IMPORTANT
+          workspaceId: activeWorkspace.id,
         }),
       });
 
-      const data = await res.json();
-      setProjects((prev) => [data, ...prev]);
+      if (!res.ok) throw new Error("Project creation failed");
+
+      await fetchProjects(); // ✅ re-fetch from server
     } catch (err) {
       console.error(err);
     }
@@ -243,6 +265,10 @@ export function useStore() {
     }
   }, [darkMode]);
 
+  useEffect(() => {
+    fetchProjects();
+  }, [activeWorkspace?.id, currentUser?.id]);
+
   // ---------------- FETCH CURRENT USER ----------------
   useEffect(() => {
     // 1️⃣ FIRST: Try localStorage
@@ -285,37 +311,6 @@ export function useStore() {
 
     fetchUser();
   }, []);
-
-  // ---------------- FETCH PROJECTS ----------------
-  useEffect(() => {
-    const fetchProjects = async () => {
-      if (!activeWorkspace?.id || !currentUser?.id) return;
-
-      try {
-        const res = await fetch(
-          `${API_BASE}/projects?userId=${currentUser.id}&workspaceId=${activeWorkspace.id}`,
-        );
-
-        if (!res.ok) {
-          setProjects([]);
-          return;
-        }
-
-        const data = await res.json();
-
-        if (Array.isArray(data)) {
-          setProjects(data);
-        } else {
-          setProjects([]);
-        }
-      } catch (err) {
-        console.error("Fetch projects failed");
-        setProjects([]);
-      }
-    };
-
-    fetchProjects();
-  }, [activeWorkspace?.id, currentUser?.id]);
 
   // ---------------- FETCH WORKSPACES ----------------
   useEffect(() => {
