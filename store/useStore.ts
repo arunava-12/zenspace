@@ -287,21 +287,31 @@ export function useStore() {
     const fetchProjects = async () => {
       if (!activeWorkspace?.id || !currentUser?.id) return;
 
-      const res = await fetch(
-        `${API_BASE}/projects?userId=${currentUser.id}&workspaceId=${activeWorkspace.id}`,
-      );
+      try {
+        const res = await fetch(
+          `${API_BASE}/projects?userId=${currentUser.id}&workspaceId=${activeWorkspace.id}`,
+        );
 
-      const data = await res.json();
+        if (!res.ok) {
+          setProjects([]);
+          return;
+        }
 
-      if (Array.isArray(data)) {
-        setProjects(data);
-      } else {
-        setProjects([]); // safety
+        const data = await res.json();
+
+        if (Array.isArray(data)) {
+          setProjects(data);
+        } else {
+          setProjects([]);
+        }
+      } catch (err) {
+        console.error("Fetch projects failed");
+        setProjects([]);
       }
     };
 
     fetchProjects();
-  }, [activeWorkspace, currentUser]);
+  }, [activeWorkspace?.id, currentUser?.id]);
 
   // ---------------- FETCH WORKSPACES ----------------
   useEffect(() => {
