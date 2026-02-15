@@ -75,8 +75,16 @@ router.delete("/:id", async (req, res) => {
   try {
     const { id } = req.params;
 
+    const existing = await prisma.project.findUnique({
+      where: { id },
+    });
+
+    if (!existing) {
+      return res.status(404).json({ error: "Project not found" });
+    }
+
     await prisma.project.delete({
-      where: { id: id },
+      where: { id },
     });
 
     res.json({ success: true });

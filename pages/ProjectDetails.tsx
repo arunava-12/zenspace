@@ -245,18 +245,27 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ store }) => {
       )
     ) {
       try {
-        await fetch(
+        const res = await fetch(
           `https://zenspace-backend-hsfl.onrender.com/api/projects/${project.id}`,
           {
             method: "DELETE",
           },
         );
 
-        deleteProject(project.id); // remove from UI
+        // 🔴 IMPORTANT CHECK
+        if (!res.ok) {
+          const data = await res.json().catch(() => null);
+          console.error("Delete failed:", data);
+          alert("Failed to delete project from server");
+          return; // STOP here
+        }
+
+        // ✅ Only runs if server succeeded
+        deleteProject(project.id);
         navigate("/projects");
       } catch (err) {
         console.error("Delete failed:", err);
-        alert("Failed to delete project");
+        alert("Network error while deleting project");
       }
     }
   };
