@@ -1,4 +1,4 @@
-import React, { useState, useRef, useMemo } from "react";
+import React, { useState, useRef, useMemo, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
@@ -67,10 +67,16 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ store }) => {
 
   const project = projects.find((p: any) => p.id === id);
 
+  useEffect(() => {
+    if (!project) {
+      navigate("/projects");
+    }
+  }, [project, navigate]);
+
   if (!project) {
-    navigate("/projects");
     return null;
   }
+
   const projectTasks = tasks.filter((t: any) => t.projectId === id);
   const projectFiles = files.filter((f: any) => f.projectId === id);
   const projectComments = comments.filter((c: any) => c.projectId === id);
