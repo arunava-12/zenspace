@@ -158,10 +158,25 @@ export function useStore() {
     }
   };
 
-  const deleteProject = (id: string) => {
-    setProjects((prev) => prev.filter((p) => p.id !== id));
-    setTasks((prev) => prev.filter((t) => t.projectId !== id));
+  const deleteProject = async (id: string) => {
+    try {
+      const res = await fetch(`${API_BASE}/projects/${id}`, {
+        method: "DELETE",
+      });
+
+      if (!res.ok) {
+        throw new Error("Server delete failed");
+      }
+
+      // update UI only after server success
+      setProjects((prev) => prev.filter((p) => p.id !== id));
+      setTasks((prev) => prev.filter((t) => t.projectId !== id));
+    } catch (err) {
+      console.error("Delete project failed", err);
+      alert("Failed to delete project from server");
+    }
   };
+
   const addProjectMember = (projectId: string, userId: string) => {
     setProjects((prev) =>
       prev.map((p) =>
@@ -183,14 +198,17 @@ export function useStore() {
 
   const createWorkspace = async (name: string) => {
     try {
-      const res = await fetch("https://zenspace-backend-hsfl.onrender.com/api/workspaces", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name,
-          ownerId: currentUser.id,
-        }),
-      });
+      const res = await fetch(
+        "https://zenspace-backend-hsfl.onrender.com/api/workspaces",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name,
+            ownerId: currentUser.id,
+          }),
+        },
+      );
 
       const data = await res.json();
 
