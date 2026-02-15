@@ -91,4 +91,8 @@ router.delete("/:id", async (req, res) => {
   }
 });
 
+router.get("/test-delete", (_req, res) => {
+  res.json({ ok: true });
+});
+
 export default router;
