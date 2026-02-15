@@ -70,4 +70,20 @@ router.get("/", async (req, res) => {
   res.json(projects);
 });
 
+// DELETE PROJECT
+router.delete("/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    await prisma.project.delete({
+      where: { id: id },
+    });
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Project deletion failed" });
+  }
+});
+
 export default router;

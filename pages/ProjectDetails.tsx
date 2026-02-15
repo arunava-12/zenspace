@@ -238,14 +238,26 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ store }) => {
     }
   };
 
-  const handleDeleteProject = () => {
+  const handleDeleteProject = async () => {
     if (
       window.confirm(
         "Are you sure you want to delete this project? This action cannot be undone.",
       )
     ) {
-      deleteProject(project.id);
-      navigate("/projects");
+      try {
+        await fetch(
+          `https://zenspace-backend-hsfl.onrender.com/api/projects/${project.id}`,
+          {
+            method: "DELETE",
+          },
+        );
+
+        deleteProject(project.id); // remove from UI
+        navigate("/projects");
+      } catch (err) {
+        console.error("Delete failed:", err);
+        alert("Failed to delete project");
+      }
     }
   };
 
