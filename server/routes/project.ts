@@ -75,21 +75,18 @@ router.delete("/:id", async (req, res) => {
   try {
     const { id } = req.params;
 
-    const existing = await prisma.project.findUnique({
+    const result = await prisma.project.deleteMany({
       where: { id },
     });
 
-    if (!existing) {
-      return res.status(404).json({ error: "Project not found" });
+    if (result.count === 0) {
+      return res.status(200).json({ success: true }); 
+      // already deleted — treat as success
     }
-
-    await prisma.project.delete({
-      where: { id },
-    });
 
     res.json({ success: true });
   } catch (err) {
-    console.error(err);
+    console.error("Delete project error:", err);
     res.status(500).json({ error: "Project deletion failed" });
   }
 });
