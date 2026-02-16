@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { User } from "../types";
 
 class APIError extends Error {
@@ -113,6 +113,9 @@ export function useStore() {
   const [isChatbotOpen, setIsChatbotOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<any | null>(null);
 
+  // 🔥 FIX: Add ref to track ongoing project creation
+  const isCreatingProjectRef = useRef(false);
+
   const openWorkspaceModal = (type: "create" | "join" = "create") => {
     setWorkspaceModalType(type);
     setIsWorkspaceModalOpen(true);
@@ -161,8 +164,17 @@ export function useStore() {
     }
   };
 
+  // 🔥 FIX: Prevent double project creation
   const addProject = async (project: any) => {
+    // Prevent duplicate calls
+    if (isCreatingProjectRef.current) {
+      console.log("🚫 Project creation already in progress, skipping...");
+      return;
+    }
+
     try {
+      isCreatingProjectRef.current = true;
+
       const res = await fetch(`${API_BASE}/projects`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -174,9 +186,18 @@ export function useStore() {
 
       if (!res.ok) throw new Error("Project creation failed");
 
-      await fetchProjects(); // ✅ re-fetch from server
+      const newProject = await res.json();
+
+      // ✅ Add the project directly to state instead of refetching
+      setProjects((prev) => [newProject, ...prev]);
     } catch (err) {
       console.error(err);
+      throw err; // Re-throw so modal can handle error
+    } finally {
+      // Reset the flag after a short delay to allow for the API call to complete
+      setTimeout(() => {
+        isCreatingProjectRef.current = false;
+      }, 500);
     }
   };
 
