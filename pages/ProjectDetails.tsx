@@ -608,7 +608,7 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ store }) => {
                               <td className="px-8 py-5 text-right">
                                 <button
                                   onClick={(e) => handleDeleteTask(task.id, e)}
-                                  className="p-2 hover:bg-rose-500/10 text-rose-600 rounded-xl transition-colors opacity-0 group-hover:opacity-100"
+                                  className="p-2 hover:bg-rose-500/10 text-rose-600 rounded-xl transition-colors"
                                   title="Delete task"
                                 >
                                   <Trash2 size={18} />
