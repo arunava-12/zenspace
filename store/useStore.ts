@@ -554,6 +554,7 @@ export function useStore() {
     addTask,
     updateTask,
     deleteTask,
+    fetchTasks, // 🔥 ADD: Expose fetchTasks so pages can manually refresh
 
     // -------- USERS --------
     users,

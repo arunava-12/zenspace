@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, Filter, Plus, X, Trash2, Edit2, CheckCircle, Calendar } from 'lucide-react';
 import { Task, Priority, TaskType, TaskStatus } from '../types.ts';
 
@@ -14,12 +14,20 @@ const Tasks: React.FC<TasksProps> = ({ store }) => {
   addTask,
   updateTask,
   deleteTask,
+  fetchTasks, // 🔥 ADD: Get fetchTasks from store
   currentUser = { id: '' }
 } = store || {};
   const [showModal, setShowModal] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [dragOverStatus, setDragOverStatus] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false); // 🔥 ADD: Loading state
+
+  // 🔥 ADD: Refetch tasks when component mounts
+  useEffect(() => {
+    if (fetchTasks) {
+      fetchTasks();
+    }
+  }, [fetchTasks]);
   
   // Form State
   const [formData, setFormData] = useState({
