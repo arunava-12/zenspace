@@ -67,20 +67,7 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ store }) => {
 
   const project = projects.find((p: any) => p.id === id);
 
-  useEffect(() => {
-    if (!project) {
-      navigate("/projects");
-    }
-  }, [project, navigate]);
-
-  if (!project) {
-    return null;
-  }
-
-  const projectTasks = tasks.filter((t: any) => t.projectId === id);
-  const projectFiles = files.filter((f: any) => f.projectId === id);
-  const projectComments = comments.filter((c: any) => c.projectId === id);
-
+  // ✅ FIX: Initialize ALL hooks BEFORE any early returns
   const [activeTab, setActiveTab] = useState("tasks");
   const [isGenerating, setIsGenerating] = useState(false);
   const [showOptionsMenu, setShowOptionsMenu] = useState(false);
@@ -91,6 +78,29 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ store }) => {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const discussionEndRef = useRef<HTMLDivElement>(null);
+
+  // ✅ Call all hooks first, THEN check for project existence
+  useEffect(() => {
+    if (!project) {
+      navigate("/projects");
+    }
+  }, [project, navigate]);
+
+  // ✅ Early return AFTER all hooks
+  if (!project) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-center space-y-2">
+          <Loader2 size={32} className="animate-spin mx-auto text-blue-600" />
+          <p className="text-zinc-500 font-medium">Loading project...</p>
+        </div>
+      </div>
+    );
+  }
+
+  const projectTasks = tasks.filter((t: any) => t.projectId === id);
+  const projectFiles = files.filter((f: any) => f.projectId === id);
+  const projectComments = comments.filter((c: any) => c.projectId === id);
 
   const lead = users.find((u: any) => u.id === project?.leadId);
 
