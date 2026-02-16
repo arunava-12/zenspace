@@ -110,36 +110,33 @@ const GlobalModals: React.FC<GlobalModalsProps> = ({ store }) => {
     closeTaskModal();
   };
 
+  // 🔥 FIXED: Now just passes the project data to the store function
   const handleProjectSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     try {
-      const res = await fetch(
-        "https://zenspace-backend-hsfl.onrender.com/api/projects",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            name: projectForm.name,
-            description: projectForm.description,
-            priority: projectForm.priority,
-            status: projectForm.status,
-            startDate: projectForm.startDate,
-            endDate: projectForm.endDate,
-            leadId: currentUser.id,
-            workspaceId: store.activeWorkspace?.id, // important
-          }),
-        },
-      );
+      // ✅ Call the store's addProject function which handles the API call
+      await addProject({
+        name: projectForm.name,
+        description: projectForm.description,
+        priority: projectForm.priority,
+        status: projectForm.status,
+        startDate: projectForm.startDate,
+        endDate: projectForm.endDate,
+        leadId: currentUser.id,
+      });
 
-      const newProject = await res.json();
-
-      // now use REAL backend project
-      addProject(newProject);
-
-      setProjectForm({ ...projectForm, name: "", description: "" });
+      // Reset form and close modal
+      setProjectForm({
+        name: "",
+        description: "",
+        priority: "Medium",
+        status: "Active",
+        startDate: new Date().toISOString().split("T")[0],
+        endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+          .toISOString()
+          .split("T")[0],
+      });
       closeProjectModal();
     } catch (err) {
       console.error(err);
