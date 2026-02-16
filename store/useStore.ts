@@ -136,12 +136,91 @@ export function useStore() {
   const openChatbot = () => setIsChatbotOpen(true);
   const closeChatbot = () => setIsChatbotOpen(false);
 
-  // CRUD helpers
-  const addTask = (t: any) => setTasks((prev) => [t, ...prev]);
-  const updateTask = (t: any) =>
-    setTasks((prev) => prev.map((x) => (x.id === t.id ? t : x)));
-  const deleteTask = (id: string) =>
-    setTasks((prev) => prev.filter((t) => t.id !== id));
+  // ============ FETCH TASKS ============
+  const fetchTasks = async () => {
+    if (!currentUser?.id) return;
+
+    try {
+      const res = await fetch(`${API_BASE}/tasks?userId=${currentUser.id}`);
+
+      if (!res.ok) {
+        setTasks([]);
+        return;
+      }
+
+      const data = await res.json();
+      setTasks(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error("Fetch tasks failed", err);
+      setTasks([]);
+    }
+  };
+
+  // ============ ADD TASK (with API) ============
+  const addTask = async (taskData: any) => {
+    try {
+      const res = await fetch(`${API_BASE}/tasks`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(taskData),
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to create task");
+      }
+
+      const newTask = await res.json();
+      setTasks((prev) => [newTask, ...prev]);
+      
+      return newTask;
+    } catch (err) {
+      console.error("Add task failed", err);
+      throw err;
+    }
+  };
+
+  // ============ UPDATE TASK (with API) ============
+  const updateTask = async (taskData: any) => {
+    try {
+      const res = await fetch(`${API_BASE}/tasks/${taskData.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(taskData),
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to update task");
+      }
+
+      const updatedTask = await res.json();
+      setTasks((prev) =>
+        prev.map((t) => (t.id === updatedTask.id ? updatedTask : t))
+      );
+
+      return updatedTask;
+    } catch (err) {
+      console.error("Update task failed", err);
+      throw err;
+    }
+  };
+
+  // ============ DELETE TASK (with API) ============
+  const deleteTask = async (id: string) => {
+    try {
+      const res = await fetch(`${API_BASE}/tasks/${id}`, {
+        method: "DELETE",
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to delete task");
+      }
+
+      setTasks((prev) => prev.filter((t) => t.id !== id));
+    } catch (err) {
+      console.error("Delete task failed", err);
+      throw err;
+    }
+  };
 
   const fetchProjects = async () => {
     if (!activeWorkspace?.id || !currentUser?.id) return;
@@ -288,6 +367,7 @@ export function useStore() {
 
   useEffect(() => {
     fetchProjects();
+    fetchTasks(); // 🔥 ADD: Fetch tasks when workspace/user changes
   }, [activeWorkspace?.id, currentUser?.id]);
 
   // ---------------- FETCH CURRENT USER ----------------

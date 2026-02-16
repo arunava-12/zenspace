@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Search, Filter, Plus, X, Trash2, Edit2, CheckCircle, Calendar } from 'lucide-react';
 import { Task, Priority, TaskType, TaskStatus } from '../types.ts';
@@ -20,6 +19,7 @@ const Tasks: React.FC<TasksProps> = ({ store }) => {
   const [showModal, setShowModal] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [dragOverStatus, setDragOverStatus] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false); // 🔥 ADD: Loading state
   
   // Form State
   const [formData, setFormData] = useState({
@@ -62,18 +62,24 @@ const Tasks: React.FC<TasksProps> = ({ store }) => {
     setShowModal(true);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // 🔥 FIX: Make handler async and handle errors
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (editingTask) {
-      updateTask({ ...editingTask, ...formData });
-    } else {
-      addTask({
-        ...formData,
-        id: `t-${Math.random().toString(36).substr(2, 9)}`,
-        createdAt: new Date().toISOString()
-      });
+    setIsSubmitting(true);
+    
+    try {
+      if (editingTask) {
+        await updateTask({ ...editingTask, ...formData });
+      } else {
+        await addTask(formData);
+      }
+      setShowModal(false);
+    } catch (err) {
+      console.error('Task operation failed:', err);
+      alert('Failed to save task. Please try again.');
+    } finally {
+      setIsSubmitting(false);
     }
-    setShowModal(false);
   };
 
   // Drag and Drop Handlers
@@ -104,13 +110,30 @@ const Tasks: React.FC<TasksProps> = ({ store }) => {
     setDragOverStatus(status);
   };
 
-  const handleDrop = (e: React.DragEvent, newStatus: TaskStatus) => {
+  // 🔥 FIX: Make drop handler async
+  const handleDrop = async (e: React.DragEvent, newStatus: TaskStatus) => {
     e.preventDefault();
     setDragOverStatus(null);
     const taskId = e.dataTransfer.getData('taskId');
     const task = tasks.find((t: Task) => t.id === taskId);
     if (task && task.status !== newStatus) {
-      updateTask({ ...task, status: newStatus });
+      try {
+        await updateTask({ ...task, status: newStatus });
+      } catch (err) {
+        console.error('Failed to update task status:', err);
+      }
+    }
+  };
+
+  // 🔥 FIX: Make delete handler async
+  const handleDelete = async (taskId: string) => {
+    if (!confirm('Are you sure you want to delete this task?')) return;
+    
+    try {
+      await deleteTask(taskId);
+    } catch (err) {
+      console.error('Failed to delete task:', err);
+      alert('Failed to delete task. Please try again.');
     }
   };
 
@@ -177,7 +200,7 @@ const Tasks: React.FC<TasksProps> = ({ store }) => {
                         <button onClick={() => handleOpenModal(task)} className="p-1.5 hover:bg-blue-500/10 text-blue-600 rounded-lg">
                           <Edit2 size={12} />
                         </button>
-                        <button onClick={() => deleteTask(task.id)} className="p-1.5 hover:bg-rose-500/10 text-rose-600 rounded-lg">
+                        <button onClick={() => handleDelete(task.id)} className="p-1.5 hover:bg-rose-500/10 text-rose-600 rounded-lg">
                           <Trash2 size={12} />
                         </button>
                       </div>
@@ -294,15 +317,17 @@ const Tasks: React.FC<TasksProps> = ({ store }) => {
                  <button 
                   type="button"
                   onClick={() => setShowModal(false)}
-                  className="flex-1 py-4 border border-zinc-200 dark:border-white/10 rounded-2xl text-sm font-black text-zinc-500 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-all"
+                  disabled={isSubmitting}
+                  className="flex-1 py-4 border border-zinc-200 dark:border-white/10 rounded-2xl text-sm font-black text-zinc-500 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-all disabled:opacity-50"
                  >
                     Cancel
                  </button>
                  <button 
                   type="submit"
-                  className="flex-1 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl text-sm font-black shadow-xl shadow-blue-500/20 transition-all active:scale-95"
+                  disabled={isSubmitting}
+                  className="flex-1 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl text-sm font-black shadow-xl shadow-blue-500/20 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
                  >
-                    {editingTask ? 'Update Task' : 'Create Task'}
+                    {isSubmitting ? 'Saving...' : (editingTask ? 'Update Task' : 'Create Task')}
                  </button>
               </div>
             </form>

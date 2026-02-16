@@ -5,6 +5,7 @@ import authRoutes from "./auth";
 import userRoutes from "./routes/user";
 import projectRoutes from "./routes/project";
 import workspaceRoutes from "./routes/workspace";
+import taskRoutes from "./routes/task"; // 🔥 ADD THIS
 
 // Catch unexpected crashes so Railway logs show real error
 process.on("uncaughtException", (err) => {
@@ -27,12 +28,12 @@ app.use((req, _res, next) => {
   next();
 });
 
-
 // Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/user", userRoutes);
 app.use("/api/projects", projectRoutes);
 app.use("/api/workspaces", workspaceRoutes);
+app.use("/api/tasks", taskRoutes); // 🔥 ADD THIS
 
 // Health / Root Route
 app.get("/", (_req, res) => {
