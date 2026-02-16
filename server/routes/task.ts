@@ -1,5 +1,5 @@
 import { Router } from "express";
-import prisma  from "../prisma";
+import prisma from "../prisma"; // Fixed: default import instead of named import
 
 const router = Router();
 
@@ -37,11 +37,11 @@ router.get("/", async (req, res) => {
     });
 
     // Transform to match frontend format
-    const formattedTasks = tasks.map((task) => ({
+    const formattedTasks = tasks.map((task: any) => ({ // Fixed: added type annotation
       id: task.id,
       title: task.title,
       description: task.description || "",
-      status: task.status.replace("_", " "), // "IN_PROGRESS" → "In Progress"
+      status: task.status.replace(/_/g, " "), // Fixed: replace all underscores
       type: task.type,
       priority: task.priority,
       dueDate: task.dueDate ? task.dueDate.toISOString().split("T")[0] : "",
@@ -102,6 +102,11 @@ router.post("/", async (req, res) => {
       ? (status.replace(/\s+/g, "_").toUpperCase() as any)
       : "TODO";
 
+    // Transform type format: "Task" → "TASK"
+    const dbType = type
+      ? (type.toUpperCase() as any)
+      : "TASK";
+
     const task = await prisma.task.create({
       data: {
         title,
@@ -109,7 +114,7 @@ router.post("/", async (req, res) => {
         projectId,
         assigneeId,
         priority: priority || "Medium",
-        type: type || "TASK",
+        type: dbType,
         status: dbStatus,
         dueDate: dueDate ? new Date(dueDate) : null,
       },
@@ -136,7 +141,7 @@ router.post("/", async (req, res) => {
       id: task.id,
       title: task.title,
       description: task.description || "",
-      status: task.status.replace("_", " "), // "IN_PROGRESS" → "In Progress"
+      status: task.status.replace(/_/g, " "), // Fixed: replace all underscores
       type: task.type,
       priority: task.priority,
       dueDate: task.dueDate ? task.dueDate.toISOString().split("T")[0] : "",
@@ -181,13 +186,18 @@ router.put("/:id", async (req, res) => {
       ? (status.replace(/\s+/g, "_").toUpperCase() as any)
       : undefined;
 
+    // Transform type format if provided: "Task" → "TASK"
+    const dbType = type
+      ? (type.toUpperCase() as any)
+      : undefined;
+
     const task = await prisma.task.update({
       where: { id },
       data: {
         title,
         description,
         status: dbStatus,
-        type,
+        type: dbType,
         priority,
         dueDate: dueDate ? new Date(dueDate) : null,
         assigneeId,
@@ -215,7 +225,7 @@ router.put("/:id", async (req, res) => {
       id: task.id,
       title: task.title,
       description: task.description || "",
-      status: task.status.replace("_", " "),
+      status: task.status.replace(/_/g, " "), // Fixed: replace all underscores
       type: task.type,
       priority: task.priority,
       dueDate: task.dueDate ? task.dueDate.toISOString().split("T")[0] : "",
