@@ -137,11 +137,18 @@ export function useStore() {
   const closeChatbot = () => setIsChatbotOpen(false);
 
   // ============ FETCH TASKS ============
-  const fetchTasks = async () => {
+  const fetchTasks = useCallback(async () => {
     if (!currentUser?.id) return;
 
     try {
-      const res = await fetch(`${API_BASE}/tasks?userId=${currentUser.id}`);
+      const res = await fetch(`${API_BASE}/tasks?userId=${currentUser.id}`, {
+        // 🔥 FIX: Bypass cache to ensure fresh data
+        cache: "no-cache",
+        headers: {
+          "Cache-Control": "no-cache",
+          Pragma: "no-cache",
+        },
+      });
 
       if (!res.ok) {
         setTasks([]);
@@ -149,12 +156,13 @@ export function useStore() {
       }
 
       const data = await res.json();
+      console.log("✅ Fetched tasks:", data); // Debug log
       setTasks(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error("Fetch tasks failed", err);
       setTasks([]);
     }
-  };
+  }, [currentUser?.id]);
 
   // ============ ADD TASK (with API) ============
   const addTask = async (taskData: any) => {
@@ -171,7 +179,7 @@ export function useStore() {
 
       const newTask = await res.json();
       setTasks((prev) => [newTask, ...prev]);
-      
+
       return newTask;
     } catch (err) {
       console.error("Add task failed", err);
@@ -194,7 +202,7 @@ export function useStore() {
 
       const updatedTask = await res.json();
       setTasks((prev) =>
-        prev.map((t) => (t.id === updatedTask.id ? updatedTask : t))
+        prev.map((t) => (t.id === updatedTask.id ? updatedTask : t)),
       );
 
       return updatedTask;
