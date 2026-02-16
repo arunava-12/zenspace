@@ -57,6 +57,7 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ store }) => {
     users,
     currentUser,
     addTask,
+    deleteTask,
     deleteProject,
     addProjectMember,
     addFile,
@@ -263,6 +264,17 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ store }) => {
     ) {
       await deleteProject(project.id);
       navigate("/projects");
+    }
+  };
+
+  const handleDeleteTask = async (taskId: string, e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent opening task detail modal
+    if (
+      window.confirm(
+        "Are you sure you want to delete this task? This action cannot be undone.",
+      )
+    ) {
+      await deleteTask(taskId);
     }
   };
 
@@ -510,13 +522,14 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ store }) => {
                         <th className="px-8 py-5 text-center">Priority</th>
                         <th className="px-8 py-5">Due Date</th>
                         <th className="px-8 py-5 text-right">Status</th>
+                        <th className="px-8 py-5 text-right">Actions</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-zinc-100 dark:divide-white/5">
                       {projectTasks.length === 0 ? (
                         <tr>
                           <td
-                            colSpan={5}
+                            colSpan={6}
                             className="px-8 py-20 text-center text-zinc-500 font-medium"
                           >
                             No tasks created yet. Try the AI Suggest button!
@@ -591,6 +604,15 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ store }) => {
                                 >
                                   {task.status}
                                 </span>
+                              </td>
+                              <td className="px-8 py-5 text-right">
+                                <button
+                                  onClick={(e) => handleDeleteTask(task.id, e)}
+                                  className="p-2 hover:bg-rose-500/10 text-rose-600 rounded-xl transition-colors opacity-0 group-hover:opacity-100"
+                                  title="Delete task"
+                                >
+                                  <Trash2 size={18} />
+                                </button>
                               </td>
                             </tr>
                           );
