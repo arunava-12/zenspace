@@ -33,10 +33,11 @@ const Tasks: React.FC<TasksProps> = ({ store }) => {
 
   // 🔥 ADD: Refetch tasks when component mounts
   useEffect(() => {
-    if (fetchTasks) {
+    if (fetchTasks && currentUser?.id) {
       fetchTasks();
     }
-  }, []); // ✅ Empty array = run only once on mount
+  }, [currentUser?.id]);
+  // ✅ Empty array = run only once on mount
 
   // Form State
   const [formData, setFormData] = useState({
