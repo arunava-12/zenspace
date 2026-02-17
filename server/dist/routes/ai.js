@@ -4,28 +4,50 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
-const generative_ai_1 = require("@google/generative-ai");
+const groq_sdk_1 = __importDefault(require("groq-sdk"));
 const router = express_1.default.Router();
-const genAI = new generative_ai_1.GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const groq = new groq_sdk_1.default({ apiKey: process.env.GROQ_API_KEY });
+const MODEL = "llama-3.3-70b-versatile"; // free, fast, high quality
 router.post("/chat", async (req, res) => {
     try {
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-        const result = await model.generateContent(req.body.prompt);
-        res.json({ text: result.response.text() });
+        const completion = await groq.chat.completions.create({
+            model: MODEL,
+            messages: [{ role: "user", content: req.body.prompt }],
+        });
+        res.json({ text: completion.choices[0].message.content });
     }
     catch (err) {
+        console.error("AI /chat error:", err);
         res.status(500).json({ error: "AI failed" });
     }
 });
 router.post("/suggest-tasks", async (req, res) => {
     try {
         const { name, description } = req.body;
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-        const result = await model.generateContent(`Generate 3 specific actionable project tasks for a project named "${name}" with description "${description}". Return JSON array with title, description, priority, type.`);
-        const text = result.response.text();
-        res.json(JSON.parse(text));
+        const completion = await groq.chat.completions.create({
+            model: MODEL,
+            messages: [
+                {
+                    role: "user",
+                    content: `Generate 3 specific actionable project tasks for a project named "${name}" with description "${description}".
+Return ONLY a raw JSON array with no markdown, no code fences, no explanation.
+Each object must have: title, description, priority (low/medium/high), type (string).
+Example format: [{"title":"...","description":"...","priority":"high","type":"feature"}]`,
+                },
+            ],
+        });
+        const raw = completion.choices[0].message.content ?? "";
+        // Strip markdown fences just in case
+        const cleaned = raw
+            .replace(/^```json\s*/i, "")
+            .replace(/^```\s*/i, "")
+            .replace(/```\s*$/i, "")
+            .trim();
+        const parsed = JSON.parse(cleaned);
+        res.json(parsed);
     }
     catch (err) {
+        console.error("AI /suggest-tasks error:", err);
         res.status(500).json({ error: "AI failed" });
     }
 });
