@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
 import { X, Send, Sparkles, User, Bot, Loader2, Zap } from "lucide-react";
-import { GoogleGenAI } from "@google/genai";
 
 interface Message {
   role: "user" | "assistant";
@@ -21,7 +20,7 @@ const ZenAIChat: React.FC<ZenAIChatProps> = ({
   const [messages, setMessages] = useState<Message[]>([
     {
       role: "assistant",
-      content: `Hello ${currentUser.name.split(" ")[0]}! I'm ZenAI, your intelligence layer. How can I help you clear the chaos today?`,
+      content: `Hello ${(currentUser?.name || "there").split(" ")[0]}! I'm ZenAI, your intelligence layer. How can I help you clear the chaos today?`,
     },
   ]);
   const [input, setInput] = useState("");
@@ -44,46 +43,27 @@ const ZenAIChat: React.FC<ZenAIChatProps> = ({
     setIsTyping(true);
 
     try {
-      const ai = new GoogleGenAI({
-        apiKey: import.meta.env.VITE_GOOGLE_API_KEY,
-      });
-      const chat = ai.chats.create({
-        model: "gemini-3-flash-preview",
-        config: {
-          systemInstruction:
-            "You are ZenAI, a highly intelligent and helpful project management assistant. Respond in plain text only. Do NOT use markdown, bold (**), italics (*), code blocks, or special formatting symbols.",
-        },
-      });
+      const response = await fetch(
+  `${import.meta.env.VITE_API_URL}/ai/chat`,
+  {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ prompt: userMessage }),
+  }
+);
 
-      // Prepare history
-      const history = messages.map((m) => ({
-        role: m.role === "user" ? "user" : "model",
-        parts: [{ text: m.content }],
-      }));
+if (!response.ok) {
+  throw new Error("AI request failed");
+}
 
-      const streamResponse = await chat.sendMessageStream({
-        message: userMessage,
-      });
+const data = await response.json();
 
-      let assistantResponse = "";
-      setMessages((prev) => [...prev, { role: "assistant", content: "" }]);
+setMessages((prev) => [
+  ...prev,
+  { role: "assistant", content: data.text || "No response" },
+]);
 
-      for await (const chunk of streamResponse) {
-        const text = chunk.text;
-        if (text) {
-          assistantResponse += text
-            .replace(/\*\*/g, "")
-            .replace(/\*/g, "")
-            .replace(/`/g, "");
-          setMessages((prev) => {
-            const last = prev[prev.length - 1];
-            return [
-              ...prev.slice(0, -1),
-              { ...last, content: assistantResponse },
-            ];
-          });
-        }
-      }
+
     } catch (error) {
       console.error("ZenAI Error:", error);
       setMessages((prev) => [
