@@ -4,10 +4,36 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
-const prisma_1 = __importDefault(require("../prisma")); // Fixed: default import instead of named import
+const prisma_1 = __importDefault(require("../prisma"));
 const router = (0, express_1.Router)();
-// ============ GET ALL TASKS ============
-// GET /api/tasks?projectId=xxx
+// ---------------------------------------------------------------------------
+// Helpers — safely map frontend values to Prisma enum values
+// ---------------------------------------------------------------------------
+const VALID_TASK_TYPES = ["TASK", "BUG", "FEATURE", "IMPROVEMENT"];
+const VALID_PRIORITIES = ["Low", "Medium", "High"];
+/** "feature" | "FEATURE" | "Feature" → "FEATURE", unknown → "TASK" */
+function toDbType(raw) {
+    if (!raw)
+        return "TASK";
+    const upper = raw.toUpperCase();
+    return VALID_TASK_TYPES.includes(upper) ? upper : "TASK";
+}
+/** "low" | "LOW" | "Low" → "Low", unknown → "Medium" */
+function toDbPriority(raw) {
+    if (!raw)
+        return "Medium";
+    const titleCase = (raw.charAt(0).toUpperCase() + raw.slice(1).toLowerCase());
+    return VALID_PRIORITIES.includes(titleCase) ? titleCase : "Medium";
+}
+/** "In Progress" | "in_progress" | "IN_PROGRESS" → "IN_PROGRESS" */
+function toDbStatus(raw) {
+    if (!raw)
+        return "TODO";
+    return raw.replace(/\s+/g, "_").toUpperCase();
+}
+// ---------------------------------------------------------------------------
+// GET /api/tasks
+// ---------------------------------------------------------------------------
 router.get("/", async (req, res) => {
     try {
         const { projectId, userId } = req.query;
@@ -19,31 +45,16 @@ router.get("/", async (req, res) => {
         const tasks = await prisma_1.default.task.findMany({
             where,
             include: {
-                assignee: {
-                    select: {
-                        id: true,
-                        name: true,
-                        email: true,
-                        avatar: true,
-                    },
-                },
-                project: {
-                    select: {
-                        id: true,
-                        name: true,
-                    },
-                },
+                assignee: { select: { id: true, name: true, email: true, avatar: true } },
+                project: { select: { id: true, name: true } },
             },
-            orderBy: {
-                createdAt: "desc",
-            },
+            orderBy: { createdAt: "desc" },
         });
-        // Transform to match frontend format
         const formattedTasks = tasks.map((task) => ({
             id: task.id,
             title: task.title,
             description: task.description || "",
-            status: task.status.replace(/_/g, " "), // Fixed: replace all underscores
+            status: task.status.replace(/_/g, " "),
             type: task.type,
             priority: task.priority,
             dueDate: task.dueDate ? task.dueDate.toISOString().split("T")[0] : "",
@@ -51,10 +62,9 @@ router.get("/", async (req, res) => {
             assigneeId: task.assigneeId,
             createdAt: task.createdAt.toISOString(),
         }));
-        // 🔥 ADD: Prevent browser caching
-        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
-        res.setHeader('Pragma', 'no-cache');
-        res.setHeader('Expires', '0');
+        res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, private");
+        res.setHeader("Pragma", "no-cache");
+        res.setHeader("Expires", "0");
         res.json(formattedTasks);
     }
     catch (error) {
@@ -62,8 +72,9 @@ router.get("/", async (req, res) => {
         res.status(500).json({ error: "Failed to fetch tasks" });
     }
 });
-// ============ CREATE TASK ============
+// ---------------------------------------------------------------------------
 // POST /api/tasks
+// ---------------------------------------------------------------------------
 router.post("/", async (req, res) => {
     try {
         const { title, description, projectId, assigneeId, priority, type, status, dueDate, } = req.body;
@@ -74,61 +85,34 @@ router.post("/", async (req, res) => {
             });
         }
         // Verify project exists
-        const project = await prisma_1.default.project.findUnique({
-            where: { id: projectId },
-        });
-        if (!project) {
+        const project = await prisma_1.default.project.findUnique({ where: { id: projectId } });
+        if (!project)
             return res.status(404).json({ error: "Project not found" });
-        }
         // Verify assignee exists
-        const assignee = await prisma_1.default.user.findUnique({
-            where: { id: assigneeId },
-        });
-        if (!assignee) {
+        const assignee = await prisma_1.default.user.findUnique({ where: { id: assigneeId } });
+        if (!assignee)
             return res.status(404).json({ error: "Assignee not found" });
-        }
-        // Transform status format: "In Progress" → "IN_PROGRESS"
-        const dbStatus = status
-            ? status.replace(/\s+/g, "_").toUpperCase()
-            : "TODO";
-        // Transform type format: "Task" → "TASK"
-        const dbType = type
-            ? type.toUpperCase()
-            : "TASK";
         const task = await prisma_1.default.task.create({
             data: {
                 title,
                 description: description || "",
                 projectId,
                 assigneeId,
-                priority: priority || "Medium",
-                type: dbType,
-                status: dbStatus,
+                status: toDbStatus(status),
+                type: toDbType(type), // ✅ "research" → "TASK" (safe fallback)
+                priority: toDbPriority(priority), // ✅ "LOW" → "Low"
                 dueDate: dueDate ? new Date(dueDate) : null,
             },
             include: {
-                assignee: {
-                    select: {
-                        id: true,
-                        name: true,
-                        email: true,
-                        avatar: true,
-                    },
-                },
-                project: {
-                    select: {
-                        id: true,
-                        name: true,
-                    },
-                },
+                assignee: { select: { id: true, name: true, email: true, avatar: true } },
+                project: { select: { id: true, name: true } },
             },
         });
-        // Format response to match frontend expectations
         const formattedTask = {
             id: task.id,
             title: task.title,
             description: task.description || "",
-            status: task.status.replace(/_/g, " "), // Fixed: replace all underscores
+            status: task.status.replace(/_/g, " "),
             type: task.type,
             priority: task.priority,
             dueDate: task.dueDate ? task.dueDate.toISOString().split("T")[0] : "",
@@ -143,61 +127,37 @@ router.post("/", async (req, res) => {
         res.status(500).json({ error: "Failed to create task" });
     }
 });
-// ============ UPDATE TASK ============
+// ---------------------------------------------------------------------------
 // PUT /api/tasks/:id
+// ---------------------------------------------------------------------------
 router.put("/:id", async (req, res) => {
     try {
         const { id } = req.params;
-        const { title, description, status, type, priority, dueDate, assigneeId, } = req.body;
-        // Check if task exists
-        const existingTask = await prisma_1.default.task.findUnique({
-            where: { id },
-        });
-        if (!existingTask) {
+        const { title, description, status, type, priority, dueDate, assigneeId } = req.body;
+        const existingTask = await prisma_1.default.task.findUnique({ where: { id } });
+        if (!existingTask)
             return res.status(404).json({ error: "Task not found" });
-        }
-        // Transform status format if provided
-        const dbStatus = status
-            ? status.replace(/\s+/g, "_").toUpperCase()
-            : undefined;
-        // Transform type format if provided: "Task" → "TASK"
-        const dbType = type
-            ? type.toUpperCase()
-            : undefined;
         const task = await prisma_1.default.task.update({
             where: { id },
             data: {
                 title,
                 description,
-                status: dbStatus,
-                type: dbType,
-                priority,
+                status: status ? toDbStatus(status) : undefined,
+                type: type ? toDbType(type) : undefined,
+                priority: priority ? toDbPriority(priority) : undefined,
                 dueDate: dueDate ? new Date(dueDate) : null,
                 assigneeId,
             },
             include: {
-                assignee: {
-                    select: {
-                        id: true,
-                        name: true,
-                        email: true,
-                        avatar: true,
-                    },
-                },
-                project: {
-                    select: {
-                        id: true,
-                        name: true,
-                    },
-                },
+                assignee: { select: { id: true, name: true, email: true, avatar: true } },
+                project: { select: { id: true, name: true } },
             },
         });
-        // Format response
         const formattedTask = {
             id: task.id,
             title: task.title,
             description: task.description || "",
-            status: task.status.replace(/_/g, " "), // Fixed: replace all underscores
+            status: task.status.replace(/_/g, " "),
             type: task.type,
             priority: task.priority,
             dueDate: task.dueDate ? task.dueDate.toISOString().split("T")[0] : "",
@@ -212,21 +172,16 @@ router.put("/:id", async (req, res) => {
         res.status(500).json({ error: "Failed to update task" });
     }
 });
-// ============ DELETE TASK ============
+// ---------------------------------------------------------------------------
 // DELETE /api/tasks/:id
+// ---------------------------------------------------------------------------
 router.delete("/:id", async (req, res) => {
     try {
         const { id } = req.params;
-        // Check if task exists
-        const task = await prisma_1.default.task.findUnique({
-            where: { id },
-        });
-        if (!task) {
+        const task = await prisma_1.default.task.findUnique({ where: { id } });
+        if (!task)
             return res.status(404).json({ error: "Task not found" });
-        }
-        await prisma_1.default.task.delete({
-            where: { id },
-        });
+        await prisma_1.default.task.delete({ where: { id } });
         res.json({ success: true, message: "Task deleted" });
     }
     catch (error) {
