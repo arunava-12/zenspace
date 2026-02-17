@@ -6,7 +6,7 @@ const genAI = new GoogleGenerativeAI(process.env.VITE_GOOGLE_API_KEY!); // ✅ f
 
 router.post("/chat", async (req, res) => {
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
     const result = await model.generateContent(req.body.prompt);
     res.json({ text: result.response.text() });
   } catch (err) {
@@ -19,7 +19,7 @@ router.post("/suggest-tasks", async (req, res) => {
   try {
     const { name, description } = req.body;
 
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" }); // ✅ free tier
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" }); // ✅ free tier
 
     const result = await model.generateContent(
       `Generate 3 specific actionable project tasks for a project named "${name}" with description "${description}". 
