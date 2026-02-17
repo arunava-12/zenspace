@@ -32,7 +32,6 @@ import {
   ExternalLink,
   Tag,
 } from "lucide-react";
-import { GoogleGenAI, Type } from "@google/genai";
 import { FileAsset, Comment, Task } from "../types.ts";
 
 const formatDate = (d: string | Date) =>
@@ -192,40 +191,24 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ store }) => {
   const handleAISuggestTasks = async () => {
     setIsGenerating(true);
     try {
-      const ai = new GoogleGenAI({
-        apiKey: import.meta.env.VITE_GOOGLE_API_KEY,
-      });
-
-      const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
-        contents: `Generate 3 specific actionable project tasks for a project named "${project.name}" with the description: "${project.description}".`,
-        config: {
-          responseMimeType: "application/json",
-          responseSchema: {
-            type: Type.ARRAY,
-            items: {
-              type: Type.OBJECT,
-              properties: {
-                title: { type: Type.STRING },
-                description: { type: Type.STRING },
-                priority: {
-                  type: Type.STRING,
-                  description: "Low, Medium, or High",
-                },
-                type: {
-                  type: Type.STRING,
-                  description: "Task, Bug, Feature, or Improvement",
-                },
-              },
-              required: ["title", "description", "priority", "type"],
-            },
-          },
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/ai/suggest-tasks`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: project.name,
+            description: project.description,
+          }),
         },
-      });
+      );
 
-      const text = response.text;
-      if (!text) throw new Error("Empty response from AI");
-      const suggestedTasks = JSON.parse(text);
+      if (!response.ok) {
+        throw new Error("AI request failed");
+      }
+
+      const suggestedTasks = await response.json();
+
       suggestedTasks.forEach((st: any) => {
         const newTask = {
           id: `t-ai-${Math.random().toString(36).substr(2, 9)}`,
@@ -250,7 +233,7 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ store }) => {
       });
     } catch (error) {
       console.error("AI Error:", error);
-      alert("Failed to generate AI tasks. Please check your API key.");
+      alert("Failed to generate AI tasks. Please try again.");
     } finally {
       setIsGenerating(false);
     }
