@@ -155,6 +155,9 @@ const Tasks: React.FC<TasksProps> = ({ store }) => {
     }
   };
 
+  const normalizeStatus = (s?: string) =>
+    (s || "").toLowerCase().replace(/[\s_]+/g, "");
+
   return (
     <div className="space-y-8 pb-12">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -201,14 +204,22 @@ const Tasks: React.FC<TasksProps> = ({ store }) => {
                   {status}
                 </h3>
                 <span className="text-[10px] bg-white dark:bg-zinc-800 text-zinc-500 px-3 py-1 rounded-full font-black shadow-sm border border-zinc-100 dark:border-white/5">
-                  {tasks.filter((t: any) => t.status === status).length}
+                  {
+                    tasks.filter(
+                      (t: any) =>
+                        normalizeStatus(t.status) === normalizeStatus(status),
+                    ).length
+                  }
                 </span>
               </div>
             </div>
 
             <div className="space-y-3 min-h-[500px] flex-1">
               {tasks
-                .filter((t: any) => t.status === status)
+                .filter(
+                  (t: any) =>
+                    normalizeStatus(t.status) === normalizeStatus(status),
+                )
                 .map((task: any) => {
                   const project = projects.find(
                     (p: any) => p.id === task.projectId,
