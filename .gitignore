@@ -1,4 +1,14 @@
-# Logs
+# -----------------------------
+# ENV / SECRETS
+# -----------------------------
+.env
+.env.*
+server/.env
+server/.env.*
+
+# -----------------------------
+# LOGS
+# -----------------------------
 logs
 *.log
 npm-debug.log*
@@ -7,20 +17,30 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# -----------------------------
+# NODE / BUILD
+# -----------------------------
 node_modules
 dist
 dist-ssr
+server/dist
 *.local
 
-# Editor directories and files
+# -----------------------------
+# PRISMA
+# -----------------------------
+/generated/prisma
+
+# -----------------------------
+# EDITORS / OS
+# -----------------------------
 .vscode/*
 !.vscode/extensions.json
 .idea
 .DS_Store
+Thumbs.db
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
-
-/generated/prisma
