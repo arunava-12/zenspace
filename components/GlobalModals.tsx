@@ -103,7 +103,6 @@ const GlobalModals: React.FC<GlobalModalsProps> = ({ store }) => {
       addTask({
         ...taskForm,
         id: `t-${Math.random().toString(36).substr(2, 9)}`,
-        status: "Todo",
         createdAt: new Date().toISOString(),
       });
     }

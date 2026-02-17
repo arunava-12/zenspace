@@ -51,7 +51,7 @@ const Tasks: React.FC<TasksProps> = ({ store }) => {
     dueDate: new Date().toISOString().split("T")[0],
   });
 
-  const handleOpenModal = (task?: Task) => {
+  const handleOpenModal = (task?: Task, defaultStatus?: TaskStatus) => {
     if (task) {
       setEditingTask(task);
       setFormData({
@@ -72,7 +72,7 @@ const Tasks: React.FC<TasksProps> = ({ store }) => {
         projectId: projects[0]?.id || "",
         priority: "Medium",
         type: "Task",
-        status: "Todo",
+        status: defaultStatus || "Todo",
         assigneeId: currentUser.id,
         dueDate: new Date().toISOString().split("T")[0],
       });
@@ -277,7 +277,7 @@ const Tasks: React.FC<TasksProps> = ({ store }) => {
                 })}
 
               <button
-                onClick={() => handleOpenModal()}
+                onClick={() => handleOpenModal(undefined, status as TaskStatus)}
                 className="w-full py-4 border-2 border-dashed border-zinc-200 dark:border-white/5 rounded-2xl text-zinc-400 hover:text-blue-500 hover:border-blue-500/30 text-xs font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 group"
               >
                 <Plus
