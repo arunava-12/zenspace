@@ -13,6 +13,13 @@ interface ProjectsProps {
   store: any;
 }
 
+const formatDate = (d: string | Date) =>
+  new Date(d).toLocaleDateString("en-IN", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+
 const Projects: React.FC<ProjectsProps> = ({ store }) => {
   const { projects = [], users = [], openProjectModal } = store || {};
   const [filter, setFilter] = useState("All");
@@ -79,7 +86,7 @@ const Projects: React.FC<ProjectsProps> = ({ store }) => {
 
       {/* Project Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-        {filteredProjects.map((project, index) =>  {
+        {filteredProjects.map((project, index) => {
           const lead = users.find((u: any) => u.id === project.leadId);
           const memberIds = project.memberIds || [];
           const membersToShow = memberIds.slice(0, MAX_VISIBLE_MEMBERS);
@@ -101,7 +108,7 @@ const Projects: React.FC<ProjectsProps> = ({ store }) => {
                           : "bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20"
                     }`}
                   >
-                     {(project.name || "P").charAt(0)}
+                    {(project.name || "P").charAt(0)}
                   </div>
                   <button className="p-1 hover:bg-white/20 dark:hover:bg-white/10 rounded-lg text-zinc-400 transition-colors">
                     <MoreVertical size={20} />
@@ -171,7 +178,9 @@ const Projects: React.FC<ProjectsProps> = ({ store }) => {
                 </div>
                 <div className="flex items-center gap-1.5 text-zinc-400">
                   <Calendar size={14} />
-                  <span className="text-xs font-medium">{project.endDate}</span>
+                  <span className="text-xs font-medium">
+                    {formatDate(project.endDate)}
+                  </span>
                 </div>
               </div>
             </div>

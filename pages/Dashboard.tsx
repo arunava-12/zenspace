@@ -82,7 +82,6 @@ const Dashboard: React.FC<DashboardProps> = ({ store }) => {
           value={totalProjects}
           icon={Briefcase}
           color="blue"
-          trend="+2 New"
         />
         <StatsCard
           label="Done Tasks"

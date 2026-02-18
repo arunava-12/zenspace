@@ -280,3 +280,5 @@ For support, email support@zenspace.com or open an issue on GitHub.
 **Made with ❤️ by the ZenSpace Team**
 
 demo@example.com / Demo@123
+
+npx ts-node index.ts
