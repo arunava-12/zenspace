@@ -437,8 +437,6 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ store }) => {
               </div>
 
               <div className="w-full h-2 bg-zinc-200 dark:bg-zinc-800 rounded-full overflow-hidden">
-                // In ProjectDetails.tsx, update the progress bar color
-                dynamically
                 <div
                   className={`h-2 transition-all duration-700 ease-out shadow-[0_0_10px_rgba(99,102,241,0.5)] ${
                     progress === 100
