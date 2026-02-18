@@ -99,6 +99,7 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ store }) => {
   }
 
   const projectTasks = tasks.filter((t: any) => t.projectId === id);
+  const progress = store.getProjectProgress(project.id);
   const projectFiles = files.filter((f: any) => f.projectId === id);
   const projectComments = comments.filter((c: any) => c.projectId === id);
 
@@ -422,6 +423,21 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ store }) => {
                   </div>
                 </div>
               ))}
+            </div>
+
+            {/* PROGRESS BAR */}
+            <div className="space-y-2 pt-4 border-t border-zinc-100 dark:border-white/5">
+              <div className="flex justify-between text-xs font-bold text-zinc-500">
+                <span>Progress</span>
+                <span>{progress}%</span>
+              </div>
+
+              <div className="w-full h-2 bg-zinc-200 dark:bg-zinc-800 rounded-full overflow-hidden">
+                <div
+                  className="h-2 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-600 transition-all duration-700 ease-out shadow-[0_0_10px_rgba(99,102,241,0.5)]"
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
             </div>
 
             <div className="pt-4 border-t border-zinc-100 dark:border-white/5">

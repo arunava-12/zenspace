@@ -525,6 +525,20 @@ export function useStore() {
     setIsAuthenticated(false);
   }, []);
 
+  // -------- PROGRESS --------
+const getProjectProgress = (projectId: string) => {
+  const projectTasks = tasks.filter((t) => t.projectId === projectId);
+
+  const total = projectTasks.length;
+  if (total === 0) return 0;
+
+  const completed = projectTasks.filter(
+    (t) => t.status === "Done" || t.status === "Completed"
+  ).length;
+
+  return Math.round((completed / total) * 100);
+};
+
   return {
     // -------- AUTH --------
     isAuthenticated,
@@ -563,6 +577,7 @@ export function useStore() {
     updateTask,
     deleteTask,
     fetchTasks, // 🔥 ADD: Expose fetchTasks so pages can manually refresh
+    getProjectProgress,
 
     // -------- USERS --------
     users,
