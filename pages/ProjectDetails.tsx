@@ -437,8 +437,16 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ store }) => {
               </div>
 
               <div className="w-full h-2 bg-zinc-200 dark:bg-zinc-800 rounded-full overflow-hidden">
+                // In ProjectDetails.tsx, update the progress bar color
+                dynamically
                 <div
-                  className="h-2 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-600 transition-all duration-700 ease-out shadow-[0_0_10px_rgba(99,102,241,0.5)]"
+                  className={`h-2 transition-all duration-700 ease-out shadow-[0_0_10px_rgba(99,102,241,0.5)] ${
+                    progress === 100
+                      ? "bg-gradient-to-r from-emerald-500 via-emerald-600 to-green-600"
+                      : progress >= 50
+                        ? "bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-600"
+                        : "bg-gradient-to-r from-amber-500 via-orange-500 to-red-600"
+                  }`}
                   style={{ width: `${progress}%` }}
                 />
               </div>
