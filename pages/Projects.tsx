@@ -146,14 +146,48 @@ const Projects: React.FC<ProjectsProps> = ({ store }) => {
                 <div className="pt-2 space-y-2">
                   <div className="flex justify-between text-xs font-bold text-zinc-600 dark:text-zinc-400">
                     <span>Progress</span>
-                    <span>{project.progress}%</span>
+                    <span className="text-blue-600 dark:text-blue-400">
+                      {store.getProjectProgress(project.id)}%
+                    </span>
                   </div>
-                  <div className="w-full glass-inset h-2 rounded-full overflow-hidden">
+
+                  {/* Dynamic progress bar with color based on completion */}
+                  <div className="w-full h-2.5 rounded-full overflow-hidden bg-zinc-200 dark:bg-zinc-800/50 ring-1 ring-zinc-300 dark:ring-zinc-700">
                     <div
-                      className="bg-blue-600 h-full rounded-full shadow-[0_0_10px_rgba(37,99,235,0.4)] transition-all duration-1000"
-                      style={{ width: `${project.progress}%` }}
+                      className={`h-full transition-all duration-700 ease-out ${
+                        store.getProjectProgress(project.id) === 100
+                          ? "bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.4)]"
+                          : store.getProjectProgress(project.id) >= 50
+                            ? "bg-blue-600 shadow-[0_0_10px_rgba(37,99,235,0.4)]"
+                            : store.getProjectProgress(project.id) > 0
+                              ? "bg-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.4)]"
+                              : "bg-zinc-300 dark:bg-zinc-700"
+                      }`}
+                      style={{
+                        width: `${store.getProjectProgress(project.id)}%`,
+                      }}
                     />
                   </div>
+
+                  {/* Optional: Show task completion count */}
+                  <p className="text-[10px] text-zinc-400 font-medium">
+                    {
+                      store.tasks.filter(
+                        (t: any) =>
+                          t.projectId === project.id &&
+                          (t.status.toLowerCase().replace(/[\s_]+/g, "") ===
+                            "done" ||
+                            t.status.toLowerCase().replace(/[\s_]+/g, "") ===
+                              "completed"),
+                      ).length
+                    }{" "}
+                    of{" "}
+                    {
+                      store.tasks.filter((t: any) => t.projectId === project.id)
+                        .length
+                    }{" "}
+                    tasks completed
+                  </p>
                 </div>
               </div>
 

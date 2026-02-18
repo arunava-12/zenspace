@@ -153,14 +153,24 @@ const Dashboard: React.FC<DashboardProps> = ({ store }) => {
                     </span>
                   </div>
                   <div className="mt-6 flex items-center gap-6">
-                    <div className="flex-1 bg-zinc-200 dark:bg-zinc-800 h-2 rounded-full overflow-hidden shadow-inner">
+                    <div className="flex-1 h-2.5 rounded-full overflow-hidden bg-zinc-200 dark:bg-zinc-800/50 ring-1 ring-zinc-300 dark:ring-zinc-700 shadow-inner">
                       <div
-                        className="bg-gradient-to-r from-blue-600 to-indigo-500 h-full transition-all duration-1000 shadow-lg"
-                        style={{ width: `${project.progress}%` }}
-                      ></div>
+                        className={`h-full transition-all duration-700 ease-out ${
+                          store.getProjectProgress(project.id) === 100
+                            ? "bg-gradient-to-r from-emerald-500 to-emerald-600"
+                            : store.getProjectProgress(project.id) >= 50
+                              ? "bg-gradient-to-r from-blue-600 to-indigo-500"
+                              : store.getProjectProgress(project.id) > 0
+                                ? "bg-gradient-to-r from-amber-500 to-orange-500"
+                                : "bg-zinc-300 dark:bg-zinc-700"
+                        }`}
+                        style={{
+                          width: `${store.getProjectProgress(project.id)}%`,
+                        }}
+                      />
                     </div>
-                    <span className="text-sm font-black text-zinc-900 dark:text-zinc-200">
-                      {project.progress}%
+                    <span className="text-sm font-black text-blue-600 dark:text-blue-400">
+                      {store.getProjectProgress(project.id)}%
                     </span>
                   </div>
                 </div>
