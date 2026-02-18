@@ -99,7 +99,11 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ store }) => {
   }
 
   const projectTasks = tasks.filter((t: any) => t.projectId === id);
-  const progress = store.getProjectProgress(project.id);
+  const progress = useMemo(
+    () => store.getProjectProgress(project.id),
+    [tasks, project.id],
+  );
+
   const projectFiles = files.filter((f: any) => f.projectId === id);
   const projectComments = comments.filter((c: any) => c.projectId === id);
 

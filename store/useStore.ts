@@ -527,16 +527,26 @@ export function useStore() {
 
   // -------- PROGRESS --------
 const getProjectProgress = (projectId: string) => {
-  const projectTasks = tasks.filter((t) => t.projectId === projectId);
-
-  const total = projectTasks.length;
-  if (total === 0) return 0;
-
-  const completed = projectTasks.filter(
-    (t) => t.status === "Done" || t.status === "Completed"
-  ).length;
-
-  return Math.round((completed / total) * 100);
+  return tasks
+    .filter(t => t.projectId === projectId)
+    .reduce(
+      (acc, t, _, arr) => {
+        acc.total = arr.length;
+        if (t.status === "Done" || t.status === "Completed") {
+          acc.done++;
+        }
+        return acc;
+      },
+      { total: 0, done: 0 }
+    ).total === 0
+    ? 0
+    : Math.round(
+        (tasks.filter(t => t.projectId === projectId && 
+          (t.status === "Done" || t.status === "Completed")
+        ).length /
+        tasks.filter(t => t.projectId === projectId).length) *
+          100
+      );
 };
 
   return {
