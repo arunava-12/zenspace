@@ -118,8 +118,6 @@ const Landing: React.FC = () => {
           <DarkVeil
             hueShift={darkMode ? 10 : -30}
             speed={0.2}
-            noiseIntensity={0.02}
-            scanlineIntensity={0.01}
           />
         </div>
 
